@@ -2785,3 +2785,528 @@ body.is-fullscreen .level-select-panel {
 .gold-hud {
   pointer-events: auto;
 }
+
+/* 20260601: mobile percent layout correction - same scale in fullscreen/windowed */
+@media (pointer: coarse) and (orientation: landscape) {
+  .title-wrap::before {
+    bottom: calc(-1 * var(--mobile-title-h) * 0.02) !important;
+    height: calc(var(--mobile-title-h) * 2.05) !important;
+  }
+
+  .game-title-logo {
+    transform: translateY(calc(var(--mobile-title-h) * -0.02)) !important;
+  }
+
+  .title-runner {
+    top: calc(var(--mobile-title-h) * -0.18) !important;
+    --runner-y: 0px !important;
+  }
+
+  .fullscreen-button,
+  .restart-float.is-quick-restart {
+    width: calc(100% * 44 / 1280) !important;
+    height: calc(100% * 44 / 720) !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: none !important;
+    max-height: none !important;
+    top: calc(100% * 10 / 720) !important;
+  }
+
+  .fullscreen-button {
+    right: calc(100% * 10 / 1280) !important;
+  }
+
+  .restart-float.is-quick-restart {
+    right: calc(100% * 64 / 1280) !important;
+    bottom: auto !important;
+    transform: none !important;
+  }
+
+  .gold-hud,
+  body.is-mobile-game-fullscreen .gold-hud {
+    left: calc(-100% * 19 / 1280) !important;
+    bottom: calc(-100% * 19 / 720) !important;
+    width: calc(100% * 286 / 1280) !important;
+    height: calc(100% * 137 / 720) !important;
+    min-width: 0 !important;
+    padding: calc(100% * 12 / 1280) calc(100% * 29 / 1280) calc(100% * 12 / 1280) calc(100% * 52 / 1280) !important;
+    gap: calc(100% * 8 / 1280) !important;
+    transform: none !important;
+    transform-origin: 0 100% !important;
+    background-size: contain !important;
+  }
+
+  .command-deck,
+  body.is-mobile-game-fullscreen .command-deck {
+    width: calc(100% * 430 / 1280) !important;
+    max-width: calc(100% - (100% * 320 / 1280)) !important;
+    left: 50% !important;
+    bottom: 0 !important;
+    transform: translateX(-50%) !important;
+  }
+
+  .shop-strip,
+  body.is-mobile-game-fullscreen .shop-strip {
+    transform: none !important;
+    transform-origin: 50% 100% !important;
+    padding: 0 calc(100% * 30 / 430) calc(100% * 10 / 430) !important;
+  }
+
+  .start-wave-float,
+  body.is-mobile-game-fullscreen .start-wave-float {
+    right: calc(100% * 15 / 1280) !important;
+    bottom: calc(100% * 15 / 720) !important;
+    width: calc(100% * 146 / 1280) !important;
+    height: calc(100% * 146 / 720) !important;
+    transform: none !important;
+    transform-origin: 50% 50% !important;
+  }
+}
+
+/* 20260601: final desktop/mobile stage-percent bottom HUD alignment */
+.battlefield {
+  --stage-safe-x: calc(100% * 15 / 1280);
+  --stage-safe-y: calc(100% * 15 / 720);
+  --bottom-ui-y: calc(100% * 8 / 720);
+}
+
+/* Three bottom UI groups use the same 1280x720 stage percentages. */
+.gold-hud {
+  left: calc(-100% * 12 / 1280) !important;
+  bottom: var(--bottom-ui-y) !important;
+  width: calc(100% * 250 / 1280) !important;
+  height: calc(100% * 92 / 720) !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: calc(100% * 7 / 1280) calc(100% * 22 / 1280) calc(100% * 7 / 1280) calc(100% * 46 / 1280) !important;
+  gap: calc(100% * 7 / 1280) !important;
+  transform: none !important;
+  transform-origin: 0 100% !important;
+  background-size: contain !important;
+  overflow: visible !important;
+}
+.gold-hud .coin-icon {
+  width: 22% !important;
+  height: auto !important;
+  aspect-ratio: 1 / 1 !important;
+  flex: 0 0 22% !important;
+}
+.gold-hud .coin-times,
+.gold-hud #goldText {
+  font-size: clamp(12px, calc(100vw * 20 / 1280), 20px) !important;
+}
+
+.command-deck,
+body.is-fullscreen .command-deck,
+body.is-mobile-game-fullscreen .command-deck {
+  left: 50% !important;
+  bottom: var(--bottom-ui-y) !important;
+  width: calc(100% * 430 / 1280) !important;
+  max-width: none !important;
+  transform: translateX(-50%) !important;
+  pointer-events: none !important;
+}
+.command-deck .shop-strip,
+.command-deck .shop-card { pointer-events: auto !important; }
+.shop-strip,
+body.is-fullscreen .shop-strip,
+body.is-mobile-game-fullscreen .shop-strip {
+  width: 100% !important;
+  padding: 0 calc(100% * 30 / 430) calc(100% * 7 / 430) !important;
+  transform: none !important;
+  transform-origin: 50% 100% !important;
+}
+.shop-strip::before {
+  left: calc(-100% * 119 / 430) !important;
+  right: calc(-100% * 119 / 430) !important;
+  top: calc(-100% * 24 / 430) !important;
+  bottom: calc(-100% * 25 / 430) !important;
+}
+.shop-strip .shop,
+body.is-fullscreen .shop-strip .shop,
+body.is-mobile-game-fullscreen .shop-strip .shop {
+  gap: calc(100% * 6 / 430) !important;
+  min-height: 0 !important;
+  transform: translateY(calc(100% * 4 / 430)) !important;
+}
+.shop-strip .shop-card,
+body.is-fullscreen .shop-strip .shop-card,
+body.is-mobile-game-fullscreen .shop-strip .shop-card {
+  width: calc(100% * 72 / 430) !important;
+  height: auto !important;
+  aspect-ratio: 72 / 96 !important;
+  min-height: 0 !important;
+}
+.shop-strip .shop-icon,
+body.is-fullscreen .shop-strip .shop-icon,
+body.is-mobile-game-fullscreen .shop-strip .shop-icon {
+  width: 88.888% !important;
+  height: auto !important;
+  aspect-ratio: 1 / 1 !important;
+  margin-top: 24% !important;
+}
+.shop-strip .shop-item-label,
+body.is-fullscreen .shop-strip .shop-item-label,
+body.is-mobile-game-fullscreen .shop-strip .shop-item-label {
+  bottom: 4% !important;
+  font-size: clamp(8px, calc(100vw * 11 / 1280), 11px) !important;
+}
+
+.start-wave-float,
+body.is-fullscreen .start-wave-float,
+body.is-mobile-game-fullscreen .start-wave-float {
+  right: var(--stage-safe-x) !important;
+  bottom: var(--bottom-ui-y) !important;
+  width: calc(100% * 118 / 1280) !important;
+  height: calc(100% * 118 / 720) !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  transform: none !important;
+  transform-origin: 50% 50% !important;
+  background-size: contain !important;
+  overflow: visible !important;
+}
+.start-wave-float:hover:not(:disabled) { transform: scale(1.05) !important; }
+.start-wave-float:active:not(:disabled) { transform: scale(0.9) !important; }
+
+/* PC fullscreen must not use different bottom HUD scaling. */
+body.is-fullscreen .gold-hud {
+  left: calc(-100% * 12 / 1280) !important;
+  bottom: var(--bottom-ui-y) !important;
+  width: calc(100% * 250 / 1280) !important;
+  height: calc(100% * 92 / 720) !important;
+  transform: none !important;
+}
+
+@media (pointer: coarse) and (orientation: landscape) {
+  .battlefield { --bottom-ui-y: calc(100% * 8 / 720); }
+  .fullscreen-button,
+  .restart-float.is-quick-restart {
+    width: calc(100% * 40 / 1280) !important;
+    height: calc(100% * 40 / 720) !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: none !important;
+    max-height: none !important;
+  }
+  .fullscreen-button { right: calc(100% * 10 / 1280) !important; }
+  .restart-float.is-quick-restart { right: calc(100% * 58 / 1280) !important; }
+}
+
+/* 20260601: final fix - preserve art aspect ratio, scale whole UI groups only */
+.battlefield {
+  --stage-scale: 1;
+  --bottom-safe: 12px;
+}
+
+.gold-hud,
+body.is-fullscreen .gold-hud,
+body.is-mobile-game-fullscreen .gold-hud {
+  left: 12px !important;
+  bottom: var(--bottom-safe) !important;
+  width: 286px !important;
+  height: 137px !important;
+  min-width: 286px !important;
+  min-height: 0 !important;
+  padding: 12px 29px 12px 52px !important;
+  gap: 8px !important;
+  box-sizing: border-box !important;
+  transform: scale(calc(var(--stage-scale) * 0.82)) !important;
+  transform-origin: 0 100% !important;
+  background-size: contain !important;
+  overflow: visible !important;
+}
+.gold-hud .coin-icon,
+body.is-fullscreen .gold-hud .coin-icon,
+body.is-mobile-game-fullscreen .gold-hud .coin-icon {
+  width: 48px !important;
+  height: 48px !important;
+  flex: 0 0 48px !important;
+}
+.gold-hud .coin-times,
+.gold-hud #goldText {
+  font-size: 22px !important;
+}
+
+.command-deck,
+body.is-fullscreen .command-deck,
+body.is-mobile-game-fullscreen .command-deck {
+  left: 50% !important;
+  bottom: var(--bottom-safe) !important;
+  width: 430px !important;
+  max-width: none !important;
+  transform: translateX(-50%) scale(var(--stage-scale)) !important;
+  transform-origin: 50% 100% !important;
+  pointer-events: none !important;
+}
+.command-deck .shop-strip,
+.command-deck .shop-card { pointer-events: auto !important; }
+.shop-strip,
+body.is-fullscreen .shop-strip,
+body.is-mobile-game-fullscreen .shop-strip {
+  width: auto !important;
+  padding: 0 30px 10px !important;
+  transform: none !important;
+  transform-origin: 50% 100% !important;
+}
+.shop-strip::before {
+  left: -119px !important;
+  right: -119px !important;
+  top: -24px !important;
+  bottom: -25px !important;
+  background-size: 100% 100% !important;
+}
+.shop-strip .shop,
+body.is-fullscreen .shop-strip .shop,
+body.is-mobile-game-fullscreen .shop-strip .shop {
+  gap: 6px !important;
+  min-height: 72px !important;
+  transform: translateY(6px) !important;
+}
+.shop-strip .shop-card,
+body.is-fullscreen .shop-strip .shop-card,
+body.is-mobile-game-fullscreen .shop-strip .shop-card {
+  width: 72px !important;
+  height: 96px !important;
+  min-height: 0 !important;
+  aspect-ratio: auto !important;
+}
+.shop-strip .shop-icon,
+body.is-fullscreen .shop-strip .shop-icon,
+body.is-mobile-game-fullscreen .shop-strip .shop-icon {
+  width: 64px !important;
+  height: 64px !important;
+  margin-top: 23px !important;
+  aspect-ratio: auto !important;
+}
+.shop-strip .shop-item-label,
+body.is-fullscreen .shop-strip .shop-item-label,
+body.is-mobile-game-fullscreen .shop-strip .shop-item-label {
+  bottom: 4px !important;
+  font-size: 11px !important;
+}
+
+.start-wave-float,
+body.is-fullscreen .start-wave-float,
+body.is-mobile-game-fullscreen .start-wave-float {
+  right: 12px !important;
+  bottom: var(--bottom-safe) !important;
+  width: 249px !important;
+  height: 99px !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  transform: scale(calc(var(--stage-scale) * 0.82)) !important;
+  transform-origin: 100% 100% !important;
+  background-size: contain !important;
+  overflow: visible !important;
+}
+.start-wave-float:hover:not(:disabled) { transform: scale(calc(var(--stage-scale) * 0.86)) !important; }
+.start-wave-float:active:not(:disabled) { transform: scale(calc(var(--stage-scale) * 0.74)) !important; }
+
+@media (pointer: coarse) and (orientation: landscape) {
+  .battlefield { --bottom-safe: 8px; }
+  .gold-hud,
+  body.is-mobile-game-fullscreen .gold-hud {
+    left: 8px !important;
+    bottom: var(--bottom-safe) !important;
+    transform: scale(calc(var(--stage-scale) * 0.74)) !important;
+  }
+  .start-wave-float,
+  body.is-mobile-game-fullscreen .start-wave-float {
+    right: 8px !important;
+    bottom: var(--bottom-safe) !important;
+    transform: scale(calc(var(--stage-scale) * 0.74)) !important;
+  }
+  .start-wave-float:hover:not(:disabled) { transform: scale(calc(var(--stage-scale) * 0.78)) !important; }
+  .start-wave-float:active:not(:disabled) { transform: scale(calc(var(--stage-scale) * 0.66)) !important; }
+}
+
+/* 20260601: align bottom side HUDs to shop visual centerline */
+.battlefield {
+  --bottom-safe: 12px;
+  --side-ui-center-y: calc(var(--bottom-safe) + (145px * var(--stage-scale) * 0.5));
+}
+
+.gold-hud,
+body.is-fullscreen .gold-hud,
+body.is-mobile-game-fullscreen .gold-hud {
+  left: 12px !important;
+  bottom: calc(var(--side-ui-center-y) - (137px * var(--stage-scale) * 0.96 * 0.5)) !important;
+  width: 286px !important;
+  height: 137px !important;
+  min-width: 286px !important;
+  padding: 12px 29px 12px 52px !important;
+  gap: 8px !important;
+  transform: scale(calc(var(--stage-scale) * 0.96)) !important;
+  transform-origin: 0 50% !important;
+}
+
+.start-wave-float,
+body.is-fullscreen .start-wave-float,
+body.is-mobile-game-fullscreen .start-wave-float {
+  right: 12px !important;
+  bottom: calc(var(--side-ui-center-y) - (99px * var(--stage-scale) * 1.18 * 0.5)) !important;
+  width: 249px !important;
+  height: 99px !important;
+  transform: scale(calc(var(--stage-scale) * 1.18)) !important;
+  transform-origin: 100% 50% !important;
+}
+.start-wave-float:hover:not(:disabled) { transform: scale(calc(var(--stage-scale) * 1.24)) !important; }
+.start-wave-float:active:not(:disabled) { transform: scale(calc(var(--stage-scale) * 1.06)) !important; }
+
+@media (pointer: coarse) and (orientation: landscape) {
+  .battlefield {
+    --bottom-safe: 8px;
+    --side-ui-center-y: calc(var(--bottom-safe) + (145px * var(--stage-scale) * 0.5));
+  }
+  .gold-hud,
+  body.is-mobile-game-fullscreen .gold-hud {
+    left: 8px !important;
+    bottom: calc(var(--side-ui-center-y) - (137px * var(--stage-scale) * 0.86 * 0.5)) !important;
+    transform: scale(calc(var(--stage-scale) * 0.86)) !important;
+    transform-origin: 0 50% !important;
+  }
+  .start-wave-float,
+  body.is-mobile-game-fullscreen .start-wave-float {
+    right: 8px !important;
+    bottom: calc(var(--side-ui-center-y) - (99px * var(--stage-scale) * 1.04 * 0.5)) !important;
+    transform: scale(calc(var(--stage-scale) * 1.04)) !important;
+    transform-origin: 100% 50% !important;
+  }
+  .start-wave-float:hover:not(:disabled) { transform: scale(calc(var(--stage-scale) * 1.09)) !important; }
+  .start-wave-float:active:not(:disabled) { transform: scale(calc(var(--stage-scale) * 0.94)) !important; }
+}
+
+/* 20260601: separate side HUD vertical correction for windowed/fullscreen */
+.battlefield {
+  --side-ui-center-y: calc(var(--bottom-safe) + (125px * var(--stage-scale) * 0.5));
+}
+
+body.is-fullscreen .battlefield,
+body.is-mobile-game-fullscreen .battlefield {
+  --side-ui-center-y: calc(var(--bottom-safe) + (134px * var(--stage-scale) * 0.5));
+}
+
+/* Windowed mode: both side groups were visually too high, lower them to the shop centerline. */
+body:not(.is-fullscreen):not(.is-mobile-game-fullscreen) .gold-hud {
+  bottom: calc(var(--side-ui-center-y) - (137px * var(--stage-scale) * 0.96 * 0.5)) !important;
+  transform: scale(calc(var(--stage-scale) * 0.96)) !important;
+}
+
+body:not(.is-fullscreen):not(.is-mobile-game-fullscreen) .start-wave-float {
+  bottom: calc(var(--side-ui-center-y) - (99px * var(--stage-scale) * 1.08 * 0.5)) !important;
+  transform: scale(calc(var(--stage-scale) * 1.08)) !important;
+}
+body:not(.is-fullscreen):not(.is-mobile-game-fullscreen) .start-wave-float:hover:not(:disabled) {
+  transform: scale(calc(var(--stage-scale) * 1.13)) !important;
+}
+body:not(.is-fullscreen):not(.is-mobile-game-fullscreen) .start-wave-float:active:not(:disabled) {
+  transform: scale(calc(var(--stage-scale) * 0.97)) !important;
+}
+
+/* Fullscreen mode: keep the centerline, but reduce the right button a little and lower the gold panel slightly. */
+body.is-fullscreen .gold-hud,
+body.is-mobile-game-fullscreen .gold-hud {
+  bottom: calc(var(--side-ui-center-y) - (137px * var(--stage-scale) * 0.96 * 0.5) - (8px * var(--stage-scale))) !important;
+  transform: scale(calc(var(--stage-scale) * 0.96)) !important;
+}
+
+body.is-fullscreen .start-wave-float,
+body.is-mobile-game-fullscreen .start-wave-float {
+  bottom: calc(var(--side-ui-center-y) - (99px * var(--stage-scale) * 1.08 * 0.5)) !important;
+  transform: scale(calc(var(--stage-scale) * 1.08)) !important;
+}
+body.is-fullscreen .start-wave-float:hover:not(:disabled),
+body.is-mobile-game-fullscreen .start-wave-float:hover:not(:disabled) {
+  transform: scale(calc(var(--stage-scale) * 1.13)) !important;
+}
+body.is-fullscreen .start-wave-float:active:not(:disabled),
+body.is-mobile-game-fullscreen .start-wave-float:active:not(:disabled) {
+  transform: scale(calc(var(--stage-scale) * 0.97)) !important;
+}
+
+@media (pointer: coarse) and (orientation: landscape) {
+  .battlefield,
+  body.is-mobile-game-fullscreen .battlefield {
+    --side-ui-center-y: calc(var(--bottom-safe) + (125px * var(--stage-scale) * 0.5));
+  }
+}
+
+/* 20260601: fine tune gold HUD vertical offset per mode */
+body.is-fullscreen .gold-hud,
+body.is-mobile-game-fullscreen .gold-hud {
+  bottom: calc(var(--side-ui-center-y) - (137px * var(--stage-scale) * 0.96 * 0.5) + (5px * var(--stage-scale))) !important;
+}
+
+body:not(.is-fullscreen):not(.is-mobile-game-fullscreen) .gold-hud {
+  bottom: calc(var(--side-ui-center-y) - (137px * var(--stage-scale) * 0.96 * 0.5) - (8px * var(--stage-scale))) !important;
+}
+
+/* 20260601: gold HUD lower in both fullscreen/windowed */
+body.is-fullscreen .gold-hud,
+body.is-mobile-game-fullscreen .gold-hud {
+  bottom: calc(var(--side-ui-center-y) - (137px * var(--stage-scale) * 0.96 * 0.5) - (7px * var(--stage-scale))) !important;
+}
+
+body:not(.is-fullscreen):not(.is-mobile-game-fullscreen) .gold-hud {
+  bottom: calc(var(--side-ui-center-y) - (137px * var(--stage-scale) * 0.96 * 0.5) - (18px * var(--stage-scale))) !important;
+}
+
+/* 20260601: mobile header/button/gold final corrections */
+@media (pointer: coarse) and (orientation: landscape) {
+  /* Windowed mobile: title banner was too low; runner legs were clipped. */
+  body:not(.is-mobile-game-fullscreen) .shell {
+    --mobile-title-h: clamp(66px, 14dvh, 96px) !important;
+  }
+  body:not(.is-mobile-game-fullscreen) .title-wrap::before {
+    bottom: calc(-1 * var(--mobile-title-h) * 0.28) !important;
+    height: calc(var(--mobile-title-h) * 2.32) !important;
+  }
+  body:not(.is-mobile-game-fullscreen) .game-title-logo {
+    transform: translateY(calc(var(--mobile-title-h) * -0.10)) !important;
+  }
+  body:not(.is-mobile-game-fullscreen) .title-runner {
+    top: calc(var(--mobile-title-h) * -0.30) !important;
+    --runner-y: 0px !important;
+  }
+
+  /* Mobile buttons should stick to the real screen edge, not the 16:9 stage edge. */
+  .fullscreen-button,
+  body.is-mobile-game-fullscreen .fullscreen-button {
+    position: fixed !important;
+    right: max(2px, env(safe-area-inset-right)) !important;
+    top: max(6px, env(safe-area-inset-top)) !important;
+    width: 40px !important;
+    height: 40px !important;
+    z-index: 80 !important;
+  }
+  .restart-float.is-quick-restart,
+  body.is-mobile-game-fullscreen .restart-float.is-quick-restart {
+    position: fixed !important;
+    right: calc(max(2px, env(safe-area-inset-right)) + 43px) !important;
+    top: max(6px, env(safe-area-inset-top)) !important;
+    width: 40px !important;
+    height: 40px !important;
+    transform: none !important;
+    z-index: 79 !important;
+  }
+  .restart-float.is-quick-restart:hover:not(:disabled),
+  body.is-mobile-game-fullscreen .restart-float.is-quick-restart:hover:not(:disabled) {
+    transform: scale(1.05) !important;
+  }
+  .restart-float.is-quick-restart:active:not(:disabled),
+  body.is-mobile-game-fullscreen .restart-float.is-quick-restart:active:not(:disabled) {
+    transform: scale(0.9) !important;
+  }
+
+  /* Mobile fullscreen: gold panel was too high/right and overlapped the shop edge. */
+  body.is-mobile-game-fullscreen .gold-hud {
+    left: -18px !important;
+    bottom: calc(var(--side-ui-center-y) - (137px * var(--stage-scale) * 0.86 * 0.5) - (18px * var(--stage-scale))) !important;
+    transform: scale(calc(var(--stage-scale) * 0.86)) !important;
+    transform-origin: 0 50% !important;
+  }
+}
