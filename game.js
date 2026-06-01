@@ -1302,6 +1302,10 @@ function restoreWaveRetrySnapshot() {
 }
 
 function restartCurrentLevel() {
+  if (game?.retrySnapshot) {
+    restoreWaveRetrySnapshot();
+    return;
+  }
   const wasBossTest = !!game?.bossTest || levelSelectMode === 'boss';
   newGame({ bossTest: wasBossTest });
   if (wasBossTest) {
@@ -3098,6 +3102,27 @@ function slotAtCanvasEvent(event, ignoreSlotId = null, radius = 64) {
   return allTowerSlots().find(slot => slot.id !== ignoreSlotId && Math.hypot(slot.x - x, slot.y - y) <= radius) || null;
 }
 
+function towerSlotAtCanvasEvent(event, ignoreSlotId = null) {
+  const { x, y } = canvasPoint(event);
+  const candidates = [];
+  for (const slot of allTowerSlots()) {
+    if (slot.id === ignoreSlotId) continue;
+    const item = game.deployed?.[slot.id];
+    if (!item) continue;
+    const rect = towerSpriteRect(slot, item);
+    const padX = Math.max(8, rect.width * 0.08);
+    const padTop = Math.max(6, rect.height * 0.04);
+    const padBottom = Math.max(10, rect.height * 0.08);
+    const inRect = x >= rect.x - padX && x <= rect.x + rect.width + padX && y >= rect.y - padTop && y <= rect.y + rect.height + padBottom;
+    if (!inRect) continue;
+    const cx = rect.x + rect.width / 2;
+    const cy = rect.y + rect.height * 0.52;
+    candidates.push({ slot, dist: Math.hypot(x - cx, y - cy), bottom: slot.y });
+  }
+  candidates.sort((a, b) => a.dist - b.dist || b.bottom - a.bottom);
+  return candidates[0]?.slot || null;
+}
+
 function bestMergeSlotForDragged(event, radius = 86) {
   if (!dragging?.source) return null;
   const moving = getItemAt(dragging.source);
@@ -3127,7 +3152,7 @@ function canvasClick(event) {
     // 现在商店道具必须通过拖拽建造；单击地图不再放置。
     return;
   }
-  const slot = slotAtCanvasEvent(event);
+  const slot = towerSlotAtCanvasEvent(event);
   if (!slot) {
     game.selected = null;
     hideTowerActionMenu();
@@ -3182,16 +3207,25 @@ function handleGoldHudClick(event) {
 }
 
 function updateFullscreenUi() {
-  const isFullscreen = !!document.fullscreenElement;
-  document.body.classList.toggle('is-fullscreen', isFullscreen);
+  const isFullscreen = !!document.fullscreenElement || document.body.classList.contains('is-mobile-game-fullscreen');
+  document.body.classList.toggle('is-fullscreen', isFullscreen && !!document.fullscreenElement);
   if (!fullscreenBtn) return;
   fullscreenBtn.textContent = '';
   fullscreenBtn.setAttribute('aria-label', isFullscreen ? '退出全屏' : '全屏');
   fullscreenBtn.title = isFullscreen ? '退出全屏' : '全屏';
 }
 
+function isCoarsePointerDevice() {
+  return window.matchMedia?.('(pointer: coarse)')?.matches;
+}
+
 async function toggleFullscreen() {
   if (!fullscreenBtn) return;
+  if (isCoarsePointerDevice()) {
+    document.body.classList.toggle('is-mobile-game-fullscreen');
+    updateFullscreenUi();
+    return;
+  }
   try {
     if (document.fullscreenElement) {
       await document.exitFullscreen?.();
@@ -3223,7 +3257,7 @@ canvas.addEventListener('dragstart', event => {
 canvas.addEventListener('pointerdown', event => {
   if (!pointerPrimaryDown(event)) return;
   if (game.phase !== 'prep') return;
-  const slot = slotAtCanvasEvent(event);
+  const slot = towerSlotAtCanvasEvent(event);
   if (!slot || !game.deployed[slot.id]) return;
   beginPointerDragFromCanvas(event, slot.id);
 });

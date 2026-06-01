@@ -654,7 +654,7 @@
               "image": "./assets/towers/level_02/thunder_tower_lv1.png",
               "width": 59,
               "height": 82,
-              "gemY": 0.15
+              "gemY": 0.11
             },
             {
               "image": "./assets/towers/level_02/thunder_tower_lv2.png",
@@ -674,7 +674,7 @@
               "image": "./assets/towers/level_02/ice_tower_lv1.png",
               "width": 58,
               "height": 82,
-              "gemY": 0.15
+              "gemY": 0.11
             },
             {
               "image": "./assets/towers/level_02/ice_tower_lv2.png",
@@ -694,7 +694,7 @@
               "image": "./assets/towers/level_02/light_tower_lv1.png",
               "width": 58,
               "height": 82,
-              "gemY": 0.15
+              "gemY": 0.11
             },
             {
               "image": "./assets/towers/level_02/light_tower_lv2.png",

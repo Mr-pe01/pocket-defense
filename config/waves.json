@@ -59,27 +59,27 @@
       "wave": 6,
       "reward": 34,
       "spawns": [
-        { "type": "runner", "count": 30, "interval": 0.26 },
-        { "type": "splitter", "count": 22, "interval": 0.44 },
-        { "type": "brute", "count": 18, "interval": 0.58 }
+        { "type": "runner", "count": 22, "interval": 0.34 },
+        { "type": "splitter", "count": 15, "interval": 0.54 },
+        { "type": "brute", "count": 8, "interval": 0.78 }
       ]
     },
     {
       "wave": 7,
       "reward": 42,
       "spawns": [
-        { "type": "runner", "count": 35, "interval": 0.22 },
-        { "type": "splitter", "count": 25, "interval": 0.37 },
-        { "type": "brute", "count": 25, "interval": 0.48 }
+        { "type": "runner", "count": 26, "interval": 0.30 },
+        { "type": "splitter", "count": 18, "interval": 0.48 },
+        { "type": "brute", "count": 12, "interval": 0.66 }
       ]
     },
     {
       "wave": 8,
       "reward": 52,
       "spawns": [
-        { "type": "runner", "count": 40, "interval": 0.18 },
-        { "type": "splitter", "count": 30, "interval": 0.31 },
-        { "type": "brute", "count": 30, "interval": 0.40 }
+        { "type": "runner", "count": 30, "interval": 0.26 },
+        { "type": "splitter", "count": 22, "interval": 0.42 },
+        { "type": "brute", "count": 16, "interval": 0.58 }
       ]
     }
   ],
