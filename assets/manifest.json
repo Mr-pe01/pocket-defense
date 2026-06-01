@@ -1,0 +1,19 @@
+{
+  "name": "口袋防线",
+  "short_name": "口袋防线",
+  "description": "口袋防线塔防 Demo",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#07111f",
+  "theme_color": "#07111f",
+  "icons": [
+    {
+      "src": "./assets/ui/title/game_title_logo.webp",
+      "sizes": "512x512",
+      "type": "image/webp",
+      "purpose": "any"
+    }
+  ]
+}
