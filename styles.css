@@ -900,7 +900,11 @@ body.dragging canvas {
 }
 
 .button-restart {
-  background-image: url('./assets/ui/buttons/button_restart_level.png?v=20260529-ui-buttons-restored');
+  background-image: url('./assets/ui/buttons/button_restart_level.png?v=20260601-fail-restart-old-v1');
+}
+
+.button-restart.is-quick-restart {
+  background-image: url('./assets/ui/buttons/3.png?v=20260601-ui-icons-v1');
 }
 
 .button-pause {
@@ -933,6 +937,29 @@ body.dragging canvas {
 
 .restart-float:active:not(:disabled) {
   transform: translateX(50%) scale(0.9);
+}
+
+.restart-float.is-quick-restart {
+  right: 94px;
+  top: 10px;
+  bottom: auto;
+  transform: none;
+  width: 44px;
+  height: 44px;
+  z-index: 20;
+}
+
+.restart-float.is-quick-restart:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.restart-float.is-quick-restart:active:not(:disabled) {
+  transform: scale(0.9);
+}
+
+body.is-fullscreen .restart-float.is-quick-restart {
+  top: max(8px, env(safe-area-inset-top));
+  right: calc(max(8px, env(safe-area-inset-right)) + 84px);
 }
 
 .deck-toggle,
@@ -1503,18 +1530,18 @@ canvas,
   top: 10px;
   right: 10px;
   z-index: 20;
-  width: 38px;
-  height: 38px;
-  display: grid;
-  place-items: center;
+  width: 44px;
+  height: 44px;
+  display: block;
   padding: 0;
-  border: 1px solid rgba(255, 244, 179, 0.62);
-  border-radius: 12px;
-  color: #fff7ed;
-  background: rgba(4, 10, 20, 0.42);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(4px);
-  font: 900 21px/1 "Microsoft YaHei", sans-serif;
+  border: 0;
+  border-radius: 0;
+  color: transparent;
+  background: url('./assets/ui/buttons/1.png?v=20260601-ui-icons-v1') center / contain no-repeat;
+  box-shadow: none;
+  backdrop-filter: none;
+  font-size: 0;
+  line-height: 0;
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
@@ -1570,6 +1597,7 @@ body.is-fullscreen .battlefield {
 body.is-fullscreen .fullscreen-button {
   top: max(8px, env(safe-area-inset-top));
   right: max(8px, env(safe-area-inset-right));
+  background-image: url('./assets/ui/buttons/2.png?v=20260601-ui-icons-v1');
 }
 
 body.is-fullscreen .level-select-panel {
@@ -1658,5 +1686,137 @@ body.is-fullscreen .level-select-panel {
     height: min(100vh, calc(100vw * 9 / 16)) !important;
     width: min(100vw, calc(100dvh * 16 / 9)) !important;
     height: min(100dvh, calc(100vw * 9 / 16)) !important;
+  }
+}
+
+/* 20260529: hide fullscreen button on phones and stabilize bottom HUD */
+@media (pointer: coarse) {
+  .fullscreen-button {
+    display: none !important;
+  }
+}
+
+@media (pointer: coarse) and (orientation: landscape) {
+  .command-deck {
+    left: 50% !important;
+    bottom: 0 !important;
+    max-width: calc(100% - 190px) !important;
+    transform: translateX(-50%) !important;
+  }
+
+  .shop-strip {
+    transform: scale(0.76) !important;
+    transform-origin: 50% 100% !important;
+    padding-bottom: 2px !important;
+  }
+
+  .gold-hud {
+    left: -42px !important;
+    bottom: -42px !important;
+    transform: scale(0.58) !important;
+    transform-origin: 0 100% !important;
+  }
+
+  .start-wave-float {
+    right: -34px !important;
+    bottom: -8px !important;
+    transform: scale(0.56) !important;
+    transform-origin: 100% 100% !important;
+  }
+
+  .restart-float {
+    transform: translateX(50%) scale(0.66) !important;
+  }
+
+  .restart-float:hover:not(:disabled) {
+    transform: translateX(50%) scale(0.66) !important;
+  }
+
+  .restart-float:active:not(:disabled) {
+    transform: translateX(50%) scale(0.58) !important;
+  }
+}
+
+/* 20260601: move level selector to top-left */
+.level-select-panel {
+  left: 10px !important;
+  right: auto !important;
+  top: 10px !important;
+}
+
+body.is-fullscreen .level-select-panel {
+  left: max(8px, env(safe-area-inset-left)) !important;
+  right: auto !important;
+  top: max(8px, env(safe-area-inset-top)) !important;
+}
+
+@media (pointer: coarse) and (orientation: landscape) {
+  .level-select-panel {
+    left: 8px !important;
+    right: auto !important;
+    top: 8px !important;
+  }
+}
+
+/* 20260530: shop drag cancel zone and level select position */
+.level-select-panel {
+  left: 10px !important;
+  right: auto !important;
+  top: 10px !important;
+}
+
+.shop-cancel-zone {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  z-index: 18;
+  width: min(560px, calc(100% - 260px));
+  height: 104px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed rgba(250, 230, 138, 0.34);
+  border-radius: 18px 18px 0 0;
+  color: rgba(167, 243, 208, 0.56);
+  background: rgba(250, 204, 21, 0.075);
+  box-shadow: inset 0 0 18px rgba(250, 204, 21, 0.055), 0 -5px 16px rgba(0, 0, 0, 0.12);
+  font: 900 20px/1 "Microsoft YaHei", sans-serif;
+  text-shadow: 0 3px 8px rgba(0, 0, 0, 0.48);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-50%) translateY(24px);
+  transition: opacity 0.12s ease, transform 0.12s ease, visibility 0.12s ease;
+}
+
+.shop-cancel-zone.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.shop-cancel-zone.is-over {
+  border-color: rgba(94, 234, 212, 0.50);
+  background: rgba(20, 184, 166, 0.10);
+  box-shadow: inset 0 0 20px rgba(94, 234, 212, 0.10), 0 0 14px rgba(94, 234, 212, 0.08);
+}
+
+.command-deck.is-drag-hidden {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+@media (pointer: coarse) and (orientation: landscape) {
+  .level-select-panel {
+    left: 8px !important;
+    right: auto !important;
+    top: 8px !important;
+  }
+
+  .shop-cancel-zone {
+    width: min(440px, calc(100% - 180px));
+    height: 82px;
+    border-radius: 16px 16px 0 0;
+    font-size: 15px;
   }
 }

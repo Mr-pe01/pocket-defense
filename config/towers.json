@@ -84,9 +84,9 @@
         ]
       },
       "levels": [
-        { "income": 8, "range": 0, "cooldown": 99, "damage": 0 },
-        { "income": 20, "range": 0, "cooldown": 99, "damage": 0 },
-        { "income": 45, "range": 0, "cooldown": 99, "damage": 0 }
+        { "income": 12, "range": 0, "cooldown": 99, "damage": 0 },
+        { "income": 30, "range": 0, "cooldown": 99, "damage": 0 },
+        { "income": 70, "range": 0, "cooldown": 99, "damage": 0 }
       ]
     }
   }

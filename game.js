@@ -5,6 +5,7 @@ const tintCtx = tintCanvas.getContext('2d');
 const shopEl = document.getElementById('shop');
 const inventoryEl = document.getElementById('inventory');
 const commandDeckEl = document.querySelector('.command-deck');
+const shopCancelZoneEl = document.getElementById('shopCancelZone');
 const battlefieldEl = document.querySelector('.battlefield');
 const deckCollapseBtn = document.getElementById('deckCollapseBtn');
 const deckExpandBtn = document.getElementById('deckExpandBtn');
@@ -67,6 +68,7 @@ let dragGhostEl = null;
 let commandDeckCollapsed = false;
 let pendingBuild = null;
 let shopDragging = null;
+let shopCancelZoneActive = false;
 let suppressNextCanvasClick = false;
 let goldHudClickCount = 0;
 let goldHudFirstClickTime = 0;
@@ -374,7 +376,28 @@ function roadOverlapRatio(x, y, radius) {
   return hits / samples.length;
 }
 
+function isInBottomBuildBlockByClient(clientX, clientY) {
+  const rect = battlefieldEl?.getBoundingClientRect?.();
+  if (!rect) return false;
+  const blockHeight = Math.max(96, rect.height * 0.16);
+  return clientX >= rect.left && clientX <= rect.right && clientY >= rect.bottom - blockHeight && clientY <= rect.bottom;
+}
+
+function isInBottomBuildBlockByCanvasY(y) {
+  return y >= canvas.height * 0.84;
+}
+
+function setShopDragCancelUi(active, over = false) {
+  shopCancelZoneActive = !!active;
+  commandDeckEl?.classList.toggle('is-drag-hidden', !!active);
+  shopCancelZoneEl?.classList.toggle('is-visible', !!active);
+  shopCancelZoneEl?.classList.toggle('is-over', !!over);
+}
+
 function canCreateTowerSlot(x, y, ignoreSlotId = null) {
+  if (isInBottomBuildBlockByCanvasY(y)) {
+    return { ok: false, reason: '底部商店区域不能放置建筑。' };
+  }
   if (x < 55 || x > canvas.width - 55 || y < 55 || y > canvas.height - 55) {
     return { ok: false, reason: '太靠近地图边缘，放不下炮台。' };
   }
@@ -668,6 +691,7 @@ function clearDragVisuals(options = {}) {
   const keepSelection = !!options.keepSelection;
   document.body.classList.remove('dragging');
   commandDeckEl?.classList.remove('is-drag-hidden');
+  setShopDragCancelUi(false);
   syncCommandDeckCollapse();
   canvas.classList.remove('drag-over');
   document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
@@ -896,8 +920,14 @@ function updateShopDrag(event) {
   const moved = Math.hypot(event.clientX - shopDragging.startClientX, event.clientY - shopDragging.startClientY);
   if (!shopDragging.started && moved < 8) return;
   shopDragging.started = true;
+  const overCancel = isInBottomBuildBlockByClient(event.clientX, event.clientY);
+  setShopDragCancelUi(true, overCancel);
   const p = canvasPoint(event);
   updatePendingBuildPreview(p.x, p.y);
+  if (placementPreview && overCancel) {
+    placementPreview.ok = false;
+    placementPreview.reason = '拖回商店取消放置';
+  }
   document.body.classList.add('dragging');
 }
 
@@ -905,12 +935,15 @@ function finishShopDrag(event) {
   if (!shopDragging) return;
   releasePointer(event, document.body);
   const wasStarted = shopDragging.started;
+  const cancelledByShopZone = wasStarted && isInBottomBuildBlockByClient(event.clientX, event.clientY);
   shopDragging = null;
   document.body.classList.remove('dragging');
+  setShopDragCancelUi(false);
   if (!pendingBuild) return;
-  if (!wasStarted) {
+  if (!wasStarted || cancelledByShopZone) {
     pendingBuild = null;
     placementPreview = null;
+    setMessage(cancelledByShopZone ? '已拖回商店，取消放置。' : '已取消建造。');
     renderSide();
     return;
   }
@@ -923,6 +956,7 @@ function cancelPendingBuild() {
   shopDragging = null;
   placementPreview = null;
   document.body.classList.remove('dragging');
+  setShopDragCancelUi(false);
   setMessage('已取消建造。');
   renderSide();
   return true;
@@ -975,6 +1009,7 @@ function placePendingBuild(event) {
   if (game.phase !== 'prep') {
     pendingBuild = null;
     placementPreview = null;
+    setShopDragCancelUi(false);
     setMessage('战斗中不能购买，请等本波结束。');
     renderSide();
     return true;
@@ -987,6 +1022,7 @@ function placePendingBuild(event) {
     pendingBuild = null;
     shopDragging = null;
     placementPreview = null;
+    setShopDragCancelUi(false);
     document.body.classList.remove('dragging');
     setMessage(`${placement.reason}，建造失败，请重新从商店拖拽。`);
     renderSide();
@@ -995,6 +1031,7 @@ function placePendingBuild(event) {
   if (!canAfford(def.cost)) {
     pendingBuild = null;
     placementPreview = null;
+    setShopDragCancelUi(false);
     setMessage(`金币不足：${def.name} 需要 ${def.cost} 金币。`);
     renderSide();
     return true;
@@ -1007,6 +1044,7 @@ function placePendingBuild(event) {
   pendingBuild = null;
   shopDragging = null;
   placementPreview = null;
+  setShopDragCancelUi(false);
   document.body.classList.remove('dragging');
   renderSide();
   return true;
@@ -1264,7 +1302,20 @@ function restoreWaveRetrySnapshot() {
 }
 
 function restartCurrentLevel() {
-  restoreWaveRetrySnapshot();
+  const wasBossTest = !!game?.bossTest || levelSelectMode === 'boss';
+  newGame({ bossTest: wasBossTest });
+  if (wasBossTest) {
+    levelSelectMode = 'boss';
+    game.bossTest = true;
+    game.gold = Infinity;
+    game.waveIndex = waveCfg.waves.length;
+    game.bossDefeated = false;
+    game.bossSpawned = false;
+    setMessage(`已重玩当前 Boss 关：${activeMap.name || activeMapId}，回到未开始放塔状态。`);
+  } else {
+    setMessage(`已重玩当前关卡：${activeMap.name || activeMapId}，回到未开始放塔状态。`);
+  }
+  renderSide();
 }
 
 function updateMainActionButton() {
@@ -2010,7 +2061,13 @@ function renderSide() {
 
   startWaveBtn.hidden = game.phase === 'ended';
   updateMainActionButton();
-  if (restartBtn) restartBtn.hidden = !(game.phase === 'ended' && game.result === 'lose');
+  if (restartBtn) {
+    const hasBuiltTower = Object.values(game.deployed || {}).some(Boolean);
+    const showQuickRestart = game.phase !== 'ended' && (game.hasStartedOnce || hasBuiltTower);
+    const showFailedRestart = game.phase === 'ended' && game.result === 'lose';
+    restartBtn.hidden = !(showQuickRestart || showFailedRestart);
+    restartBtn.classList.toggle('is-quick-restart', showQuickRestart);
+  }
   if (rerollBtn) {
     rerollBtn.disabled = true;
     rerollBtn.style.display = 'none';
@@ -2777,7 +2834,43 @@ function drawTopHudArt() {
   drawBarFill(rightX + barX - 4, sideY + barY - 1, barW, barH, Math.max(0, Math.min(1, spawnPct)), game.bossActive ? '#f97316' : '#67e8f9', true);
   drawTopBarText(leftX, sideY, sideW, sideH, `${Math.max(0, Math.ceil(game.hp))}/${cfg.game.baseHp || 1}`);
   drawTopBarText(rightX, sideY, sideW, sideH, spawnLabel);
+  drawCurrentWaveLabel(centerX, centerY, centerW, centerH);
   ctx.restore();
+}
+
+function drawCurrentWaveLabel(x, y, w, h) {
+  const totalWaves = waveCfg.waves?.length || 1;
+  const currentWave = Math.max(1, Math.min(game.waveIndex + 1, totalWaves));
+  const label = game.bossActive ? 'BOSS' : `第 ${currentWave} 波`;
+  const tx = x + w * 0.5;
+  const ty = y + h + 14;
+  ctx.save();
+  ctx.font = '900 18px Microsoft YaHei, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetY = 2;
+  ctx.strokeStyle = 'rgba(9, 22, 50, 0.95)';
+  ctx.lineWidth = 4;
+  ctx.fillStyle = '#ffe9a6';
+  drawSpacedText(label, tx, ty, 2.5);
+  ctx.restore();
+}
+
+function drawSpacedText(text, x, y, spacing = 0) {
+  const chars = Array.from(text);
+  const widths = chars.map(char => ctx.measureText(char).width);
+  const total = widths.reduce((sum, width) => sum + width, 0) + spacing * Math.max(0, chars.length - 1);
+  let cursor = x - total / 2;
+  for (let i = 0; i < chars.length; i += 1) {
+    const char = chars[i];
+    const cx = cursor + widths[i] / 2;
+    ctx.strokeText(char, cx, y);
+    ctx.fillText(char, cx, y);
+    cursor += widths[i] + spacing;
+  }
 }
 
 function drawImageContain(img, x, y, w, h, flipX = false) {
@@ -3092,7 +3185,7 @@ function updateFullscreenUi() {
   const isFullscreen = !!document.fullscreenElement;
   document.body.classList.toggle('is-fullscreen', isFullscreen);
   if (!fullscreenBtn) return;
-  fullscreenBtn.textContent = isFullscreen ? '×' : '⛶';
+  fullscreenBtn.textContent = '';
   fullscreenBtn.setAttribute('aria-label', isFullscreen ? '退出全屏' : '全屏');
   fullscreenBtn.title = isFullscreen ? '退出全屏' : '全屏';
 }
