@@ -1,0 +1,102 @@
+{
+  "shop": {
+    "offerCount": 3,
+    "rerollCost": 8,
+    "weights": [
+      { "tower": "light", "weight": 30 },
+      { "tower": "thunder", "weight": 27 },
+      { "tower": "ice", "weight": 27 },
+      { "tower": "mine", "weight": 16 }
+    ]
+  },
+  "difficultyNotes": "普通兵占比随波次降低，第 7-8 波不再出现普通兵；后期减少拖时长的大数量堆怪，主要通过更快、更硬的精英怪和每关 10% 属性成长制造压力。",
+  "waves": [
+    {
+      "wave": 1,
+      "reward": 18,
+      "spawns": [
+        { "type": "grunt", "count": 8, "interval": 0.84 }
+      ]
+    },
+    {
+      "wave": 2,
+      "reward": 24,
+      "spawns": [
+        { "type": "grunt", "count": 12, "interval": 0.76 },
+        { "type": "runner", "count": 5, "interval": 0.84 }
+      ]
+    },
+    {
+      "wave": 3,
+      "reward": 30,
+      "spawns": [
+        { "type": "grunt", "count": 13, "interval": 0.72 },
+        { "type": "runner", "count": 7, "interval": 0.72 },
+        { "type": "brute", "count": 3, "interval": 1.12 }
+      ]
+    },
+    {
+      "wave": 4,
+      "reward": 28,
+      "spawns": [
+        { "type": "grunt", "count": 11, "interval": 0.58 },
+        { "type": "runner", "count": 16, "interval": 0.52 },
+        { "type": "splitter", "count": 6, "interval": 0.90 },
+        { "type": "brute", "count": 6, "interval": 0.98 }
+      ]
+    },
+    {
+      "wave": 5,
+      "reward": 28,
+      "spawns": [
+        { "type": "grunt", "count": 7, "interval": 0.50 },
+        { "type": "runner", "count": 25, "interval": 0.36 },
+        { "type": "splitter", "count": 16, "interval": 0.62 },
+        { "type": "brute", "count": 13, "interval": 0.74 }
+      ]
+    },
+    {
+      "wave": 6,
+      "reward": 34,
+      "spawns": [
+        { "type": "runner", "count": 30, "interval": 0.26 },
+        { "type": "splitter", "count": 22, "interval": 0.44 },
+        { "type": "brute", "count": 18, "interval": 0.58 }
+      ]
+    },
+    {
+      "wave": 7,
+      "reward": 42,
+      "spawns": [
+        { "type": "runner", "count": 35, "interval": 0.22 },
+        { "type": "splitter", "count": 25, "interval": 0.37 },
+        { "type": "brute", "count": 25, "interval": 0.48 }
+      ]
+    },
+    {
+      "wave": 8,
+      "reward": 52,
+      "spawns": [
+        { "type": "runner", "count": 40, "interval": 0.18 },
+        { "type": "splitter", "count": 30, "interval": 0.31 },
+        { "type": "brute", "count": 30, "interval": 0.40 }
+      ]
+    }
+  ],
+  "boss": {
+    "enabled": true,
+    "afterWave": 8,
+    "type": "boss_forest_guardian",
+    "reward": 40,
+    "warningText": "BOSS 来袭：森林守卫出现！",
+    "skills": {
+      "haste": {
+        "name": "极速",
+        "speedMultiplier": 2,
+        "duration": 6,
+        "cooldown": 8,
+        "triggerDelay": 1.2
+      }
+    }
+  }
+}

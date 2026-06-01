@@ -1,0 +1,93 @@
+{
+  "towers": {
+    "thunder": {
+      "name": "雷塔",
+      "icon": "ϟ",
+      "color": "#8b5cf6",
+      "cost": 24,
+      "description": "群攻溅射，命中后释放雷电范围伤害，适合处理成群敌人。",
+      "sprite": {
+        "footY": 0.86,
+        "gemX": 0.50,
+        "gemY": 0.18,
+        "levels": [
+          { "image": "./assets/towers/thunder_tower_lv1.png", "width": 59, "height": 82 },
+          { "image": "./assets/towers/thunder_tower_lv2.png", "width": 67, "height": 90 },
+          { "image": "./assets/towers/thunder_tower_lv3.png", "width": 70, "height": 98 }
+        ]
+      },
+      "levels": [
+        { "damage": 18, "range": 138, "cooldown": 1.25, "splash": 65 },
+        { "damage": 35, "range": 156, "cooldown": 1.12, "splash": 82 },
+        { "damage": 64, "range": 180, "cooldown": 1.0, "splash": 100 }
+      ]
+    },
+    "ice": {
+      "name": "冰塔",
+      "icon": "❄",
+      "color": "#67e8f9",
+      "cost": 20,
+      "description": "单体低输出，但能减速敌人，为其他塔创造输出窗口。",
+      "sprite": {
+        "footY": 0.86,
+        "gemX": 0.50,
+        "gemY": 0.18,
+        "levels": [
+          { "image": "./assets/towers/ice_tower_lv1.png", "width": 58, "height": 82 },
+          { "image": "./assets/towers/ice_tower_lv2.png", "width": 69, "height": 90 },
+          { "image": "./assets/towers/ice_tower_lv3.png", "width": 72, "height": 98 }
+        ]
+      },
+      "levels": [
+        { "damage": 7, "range": 168, "cooldown": 0.8, "slow": 0.36, "slowDuration": 1.56, "targetCount": 2 },
+        { "damage": 14, "range": 198, "cooldown": 0.72, "slow": 0.46, "slowDuration": 2.02, "targetCount": 2 },
+        { "damage": 26, "range": 228, "cooldown": 0.65, "slow": 0.58, "slowDuration": 2.47, "targetCount": 2 }
+      ]
+    },
+    "light": {
+      "name": "光塔",
+      "icon": "✦",
+      "color": "#facc15",
+      "cost": 28,
+      "description": "金色激光，单体高输出，适合点杀厚血敌人。",
+      "sprite": {
+        "footY": 0.86,
+        "gemX": 0.50,
+        "gemY": 0.18,
+        "levels": [
+          { "image": "./assets/towers/light_tower_lv1.png", "width": 58, "height": 82 },
+          { "image": "./assets/towers/light_tower_lv2.png", "width": 68, "height": 90 },
+          { "image": "./assets/towers/light_tower_lv3.png", "width": 72, "height": 98 }
+        ]
+      },
+      "levels": [
+        { "damage": 24, "range": 156, "cooldown": 0.72 },
+        { "damage": 48, "range": 180, "cooldown": 0.62 },
+        { "damage": 88, "range": 206, "cooldown": 0.54 }
+      ]
+    },
+    "mine": {
+      "name": "金矿",
+      "icon": "◆",
+      "color": "#f59e0b",
+      "cost": 26,
+      "description": "不攻击，每波结束产出额外金币，适合前期滚雪球。",
+      "sprite": {
+        "footY": 0.82,
+        "gemX": 0.50,
+        "gemY": 0.32,
+        "assetNotes": "Gold mine does not use a firing gem. Lv2 is the chosen local level-2 mine slice; Lv3 uses the local high-level mine slice under src/assets/towers.",
+        "levels": [
+          { "image": "./assets/towers/mine_tower_lv1.png", "width": 70, "height": 62, "role": "mine level 1 local asset" },
+          { "image": "./assets/towers/mine_tower_lv2.png", "width": 78, "height": 68, "role": "mine level 2 local asset" },
+          { "image": "./assets/towers/mine_tower_lv3.png", "width": 86, "height": 76, "role": "mine level 3 local asset" }
+        ]
+      },
+      "levels": [
+        { "income": 8, "range": 0, "cooldown": 99, "damage": 0 },
+        { "income": 20, "range": 0, "cooldown": 99, "damage": 0 },
+        { "income": 45, "range": 0, "cooldown": 99, "damage": 0 }
+      ]
+    }
+  }
+}
