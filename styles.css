@@ -1586,3 +1586,77 @@ body.is-fullscreen .level-select-panel {
     font-size: 18px;
   }
 }
+
+/* 20260529: mobile browser battle-first layout; do not rely on requestFullscreen */
+@media (pointer: coarse) and (orientation: landscape) {
+  .shell {
+    --mobile-title-h: 0px;
+    grid-template-rows: 1fr !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    padding: 0 !important;
+    background: #050b16;
+  }
+
+  .topbar,
+  .compact-topbar,
+  .title-wrap,
+  .title-runner,
+  .game-title-logo,
+  .title-wrap::before {
+    display: none !important;
+  }
+
+  .game-card {
+    width: min(100vw, calc(100vh * 16 / 9)) !important;
+    height: min(100vh, calc(100vw * 9 / 16)) !important;
+    width: min(100vw, calc(100dvh * 16 / 9)) !important;
+    height: min(100dvh, calc(100vw * 9 / 16)) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  .battlefield {
+    border-radius: 0 !important;
+  }
+
+  .help-button {
+    display: block !important;
+    position: absolute !important;
+    z-index: 21 !important;
+    left: auto !important;
+    right: 48px !important;
+    top: 8px !important;
+    width: 34px !important;
+    height: 34px !important;
+    transform: none !important;
+    animation: none !important;
+  }
+
+  .help-button:hover {
+    transform: none !important;
+  }
+
+  .fullscreen-button {
+    right: 8px !important;
+    top: 8px !important;
+    z-index: 22 !important;
+  }
+
+  .level-select-panel {
+    right: 90px !important;
+    top: 8px !important;
+  }
+}
+
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 430px) {
+  .shell { --mobile-title-h: 0px !important; }
+  .game-card {
+    width: min(100vw, calc(100vh * 16 / 9)) !important;
+    height: min(100vh, calc(100vw * 9 / 16)) !important;
+    width: min(100vw, calc(100dvh * 16 / 9)) !important;
+    height: min(100dvh, calc(100vw * 9 / 16)) !important;
+  }
+}
