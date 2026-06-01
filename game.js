@@ -1357,6 +1357,13 @@ function toggleMainAction() {
   startWave();
 }
 
+function adjustedWaveSpawns(wave) {
+  const adjustments = activeMap?.waveAdjustments?.[String(wave.wave)] || {};
+  return wave.spawns
+    .map(group => ({ ...group, count: Math.max(0, group.count + (adjustments[group.type] || 0)) }))
+    .filter(group => group.count > 0);
+}
+
 function startWave() {
   if (game.phase !== 'prep') return;
   if (game.waveIndex >= waveCfg.waves.length) {
@@ -1366,16 +1373,17 @@ function startWave() {
   }
   game.retrySnapshot = createWaveRetrySnapshot();
   const wave = waveCfg.waves[game.waveIndex];
+  const spawns = adjustedWaveSpawns(wave);
   game.phase = 'combat';
   game.hasStartedOnce = true;
   game.selected = null;
   game.waveAlive = true;
   game.spawnQueue = [];
-  game.currentWaveTotal = wave.spawns.reduce((sum, group) => sum + group.count, 0);
+  game.currentWaveTotal = spawns.reduce((sum, group) => sum + group.count, 0);
   game.currentWaveSpawned = 0;
   game.bossActive = false;
   let delay = 0;
-  for (const group of wave.spawns) {
+  for (const group of spawns) {
     for (let i = 0; i < group.count; i++) {
       game.spawnQueue.push({ type: group.type, at: delay });
       delay += group.interval;

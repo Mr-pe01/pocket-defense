@@ -4,7 +4,7 @@
       "name": "雷塔",
       "icon": "ϟ",
       "color": "#8b5cf6",
-      "cost": 24,
+      "cost": 20,
       "description": "群攻溅射，命中后释放雷电范围伤害，适合处理成群敌人。",
       "sprite": {
         "footY": 0.86,
@@ -48,7 +48,7 @@
       "name": "光塔",
       "icon": "✦",
       "color": "#facc15",
-      "cost": 28,
+      "cost": 25,
       "description": "金色激光，单体高输出，适合点杀厚血敌人。",
       "sprite": {
         "footY": 0.86,
@@ -70,7 +70,7 @@
       "name": "金矿",
       "icon": "◆",
       "color": "#f59e0b",
-      "cost": 26,
+      "cost": 20,
       "description": "不攻击，每波结束产出额外金币，适合前期滚雪球。",
       "sprite": {
         "footY": 0.82,

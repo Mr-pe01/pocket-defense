@@ -2046,3 +2046,66 @@ body.is-fullscreen .level-select-panel {
     background-image: url('./assets/ui/buttons/2.png?v=20260601-ui-icons-v1') !important;
   }
 }
+
+/* 20260601: final mobile alignment pass */
+@media (pointer: coarse) and (orientation: landscape) {
+  .title-wrap {
+    overflow: hidden !important;
+    clip-path: none !important;
+  }
+
+  .title-runner {
+    display: block !important;
+    width: min(146px, 14vw) !important;
+    height: min(118px, 11.3vw) !important;
+    z-index: 1 !important;
+  }
+
+  .command-deck {
+    bottom: 0 !important;
+    left: 50% !important;
+    max-width: calc(100% - 320px) !important;
+    transform: translateX(-50%) !important;
+  }
+
+  .shop-strip {
+    transform: none !important;
+    transform-origin: 50% 100% !important;
+    padding: 0 30px 10px !important;
+  }
+
+  .shop-strip .shop {
+    transform: translateY(0) !important;
+    gap: 6px !important;
+  }
+
+  .shop-strip .shop-icon {
+    margin-top: 18px !important;
+  }
+
+  .shop-strip .shop-item-label {
+    bottom: 7px !important;
+  }
+
+  .start-wave-float {
+    right: 15px !important;
+    bottom: 15px !important;
+    transform: none !important;
+    transform-origin: 100% 100% !important;
+  }
+
+  .start-wave-float:hover:not(:disabled) {
+    transform: scale(1.05) !important;
+  }
+
+  .start-wave-float:active:not(:disabled) {
+    transform: scale(0.9) !important;
+  }
+
+  .gold-hud {
+    left: -19px !important;
+    bottom: -19px !important;
+    transform: none !important;
+    transform-origin: 0 100% !important;
+  }
+}

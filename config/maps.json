@@ -647,6 +647,11 @@
           "updatedAt": "2026-05-26"
         }
       },
+      "waveAdjustments": {
+        "6": { "runner": -2, "splitter": -2, "brute": -2 },
+        "7": { "runner": -2, "splitter": -2, "brute": -2 },
+        "8": { "runner": -2, "splitter": -2, "brute": -2 }
+      },
       "towerSprites": {
         "thunder": {
           "levels": [
