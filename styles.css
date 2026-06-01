@@ -2109,3 +2109,679 @@ body.is-fullscreen .level-select-panel {
     transform-origin: 0 100% !important;
   }
 }
+
+/* 20260601: mobile viewport cover/fullscreen and title crop fix */
+@media (pointer: coarse) and (orientation: landscape) {
+  .shell {
+    --mobile-title-h: clamp(74px, 17vh, 118px) !important;
+    justify-items: center !important;
+    align-items: start !important;
+  }
+
+  .topbar,
+  .compact-topbar,
+  .title-wrap {
+    width: min(100vw, calc((100dvh - var(--mobile-title-h)) * 16 / 9)) !important;
+    max-width: 100vw !important;
+    height: var(--mobile-title-h) !important;
+    min-height: var(--mobile-title-h) !important;
+    overflow: hidden !important;
+    clip-path: none !important;
+  }
+
+  .title-wrap::before {
+    left: 50% !important;
+    width: 100% !important;
+    bottom: calc(-1 * var(--mobile-title-h) * 0.12) !important;
+    height: calc(var(--mobile-title-h) * 2.15) !important;
+  }
+
+  .game-title-logo {
+    width: min(520px, 45vw) !important;
+    height: calc(var(--mobile-title-h) * 0.88) !important;
+    transform: translateY(calc(var(--mobile-title-h) * 0.08)) !important;
+  }
+
+  .title-runner {
+    display: block !important;
+    width: min(150px, 15vw) !important;
+    height: min(121px, 12.1vw) !important;
+    top: calc(var(--mobile-title-h) * 0.02) !important;
+    --runner-y: 0px !important;
+    z-index: 1 !important;
+  }
+
+  .game-card {
+    align-self: start !important;
+  }
+
+  .command-deck {
+    max-width: calc(100% - 250px) !important;
+    bottom: 0 !important;
+  }
+
+  .shop-strip {
+    transform: scale(0.92) !important;
+    transform-origin: 50% 100% !important;
+  }
+
+  .start-wave-float {
+    right: 10px !important;
+    bottom: 10px !important;
+    transform: scale(0.88) !important;
+    transform-origin: 100% 100% !important;
+  }
+
+  .start-wave-float:hover:not(:disabled) {
+    transform: scale(0.93) !important;
+  }
+
+  .start-wave-float:active:not(:disabled) {
+    transform: scale(0.78) !important;
+  }
+
+  .gold-hud {
+    left: -14px !important;
+    bottom: -14px !important;
+    transform: scale(0.82) !important;
+    transform-origin: 0 100% !important;
+  }
+}
+
+@media (pointer: coarse) and (orientation: landscape) {
+  body.is-mobile-game-fullscreen .shell {
+    --mobile-title-h: 0px !important;
+    align-items: center !important;
+    justify-items: center !important;
+  }
+
+  body.is-mobile-game-fullscreen .game-card {
+    width: min(100vw, calc(100dvh * 16 / 9)) !important;
+    height: min(100dvh, calc(100vw * 9 / 16)) !important;
+    align-self: center !important;
+  }
+
+  body.is-mobile-game-fullscreen .command-deck {
+    max-width: calc(100% - 250px) !important;
+    bottom: 0 !important;
+  }
+
+  body.is-mobile-game-fullscreen .shop-strip {
+    transform: scale(0.9) !important;
+    transform-origin: 50% 100% !important;
+  }
+
+  body.is-mobile-game-fullscreen .start-wave-float {
+    right: 10px !important;
+    bottom: 10px !important;
+    transform: scale(0.86) !important;
+  }
+
+  body.is-mobile-game-fullscreen .gold-hud {
+    left: -14px !important;
+    bottom: -14px !important;
+    transform: scale(0.8) !important;
+  }
+}
+
+/* 20260601: restore previous mobile fullscreen layout; only fix gold HUD */
+@media (pointer: coarse) and (orientation: landscape) {
+  body.is-mobile-game-fullscreen .shell {
+    --mobile-title-h: 0px !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+    align-items: center !important;
+    justify-items: center !important;
+  }
+
+  body.is-mobile-game-fullscreen .game-card {
+    width: min(100vw, calc(100vh * 16 / 9)) !important;
+    height: min(100vh, calc(100vw * 9 / 16)) !important;
+    width: min(100vw, calc(100dvh * 16 / 9)) !important;
+    height: min(100dvh, calc(100vw * 9 / 16)) !important;
+    align-self: center !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+  }
+
+  body.is-mobile-game-fullscreen .command-deck {
+    left: 50% !important;
+    bottom: 0 !important;
+    max-width: calc(100% - 320px) !important;
+    transform: translateX(-50%) !important;
+  }
+
+  body.is-mobile-game-fullscreen .shop-strip {
+    transform: none !important;
+    transform-origin: 50% 100% !important;
+    padding: 0 30px 10px !important;
+  }
+
+  body.is-mobile-game-fullscreen .shop-strip .shop {
+    transform: translateY(0) !important;
+    gap: 6px !important;
+  }
+
+  body.is-mobile-game-fullscreen .shop-strip .shop-icon {
+    margin-top: 18px !important;
+  }
+
+  body.is-mobile-game-fullscreen .shop-strip .shop-item-label {
+    bottom: 7px !important;
+  }
+
+  body.is-mobile-game-fullscreen .start-wave-float {
+    right: 15px !important;
+    bottom: 15px !important;
+    transform: none !important;
+    transform-origin: 100% 100% !important;
+  }
+
+  body.is-mobile-game-fullscreen .start-wave-float:hover:not(:disabled) {
+    transform: scale(1.05) !important;
+  }
+
+  body.is-mobile-game-fullscreen .start-wave-float:active:not(:disabled) {
+    transform: scale(0.9) !important;
+  }
+
+  body.is-mobile-game-fullscreen .gold-hud {
+    left: max(8px, env(safe-area-inset-left)) !important;
+    bottom: max(8px, env(safe-area-inset-bottom)) !important;
+    transform: scale(0.72) !important;
+    transform-origin: 0 100% !important;
+  }
+}
+
+/* 20260601: canonical mobile responsive layout; desktop layout remains unchanged */
+@media (pointer: coarse) and (orientation: landscape) {
+  body {
+    overflow: hidden !important;
+    background: #050b16 !important;
+  }
+
+  .shell {
+    --mobile-title-h: clamp(72px, 16dvh, 108px) !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    display: grid !important;
+    grid-template-rows: var(--mobile-title-h) minmax(0, 1fr) !important;
+    justify-items: center !important;
+    align-items: start !important;
+    overflow: hidden !important;
+  }
+
+  .topbar,
+  .compact-topbar,
+  .title-wrap {
+    display: flex !important;
+    width: min(100vw, calc((100dvh - var(--mobile-title-h)) * 16 / 9)) !important;
+    height: var(--mobile-title-h) !important;
+    min-height: var(--mobile-title-h) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    clip-path: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .title-wrap::before {
+    display: block !important;
+    left: 50% !important;
+    width: 100% !important;
+    bottom: calc(-1 * var(--mobile-title-h) * 0.15) !important;
+    height: calc(var(--mobile-title-h) * 2.25) !important;
+    transform: translateX(-50%) !important;
+  }
+
+  .game-title-logo {
+    display: block !important;
+    width: min(520px, 46vw) !important;
+    height: calc(var(--mobile-title-h) * 0.96) !important;
+    transform: translateY(calc(var(--mobile-title-h) * 0.10)) !important;
+  }
+
+  .title-runner {
+    display: block !important;
+    width: min(150px, 14vw) !important;
+    height: min(121px, 11.3vw) !important;
+    top: calc(var(--mobile-title-h) * 0.04) !important;
+    --runner-y: 0px !important;
+    z-index: 1 !important;
+  }
+
+  .help-button {
+    display: block !important;
+    left: calc(50% + min(150px, 18vw)) !important;
+    right: auto !important;
+    top: calc(var(--mobile-title-h) * 0.30) !important;
+    width: min(34px, calc(var(--mobile-title-h) * 0.62)) !important;
+    height: min(34px, calc(var(--mobile-title-h) * 0.62)) !important;
+    transform: translateX(-50%) !important;
+    z-index: 24 !important;
+  }
+
+  .game-card {
+    width: min(100vw, calc((100dvh - var(--mobile-title-h)) * 16 / 9)) !important;
+    height: min(calc(100dvh - var(--mobile-title-h)), calc(100vw * 9 / 16)) !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    align-self: start !important;
+  }
+
+  .battlefield,
+  canvas {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+  }
+
+  .fullscreen-button {
+    display: block !important;
+    width: 38px !important;
+    height: 38px !important;
+    right: max(8px, env(safe-area-inset-right)) !important;
+    top: max(8px, env(safe-area-inset-top)) !important;
+    z-index: 40 !important;
+  }
+
+  .restart-float.is-quick-restart {
+    width: 38px !important;
+    height: 38px !important;
+    right: calc(max(8px, env(safe-area-inset-right)) + 78px) !important;
+    top: max(8px, env(safe-area-inset-top)) !important;
+    bottom: auto !important;
+    transform: none !important;
+    z-index: 39 !important;
+  }
+
+  .command-deck {
+    left: 50% !important;
+    bottom: 0 !important;
+    max-width: calc(100% - 320px) !important;
+    transform: translateX(-50%) !important;
+  }
+
+  .shop-strip {
+    transform: none !important;
+    transform-origin: 50% 100% !important;
+    padding: 0 30px 10px !important;
+  }
+
+  .shop-strip .shop {
+    transform: translateY(6px) !important;
+    gap: 6px !important;
+  }
+
+  .shop-strip .shop-icon {
+    margin-top: 23px !important;
+  }
+
+  .shop-strip .shop-item-label {
+    bottom: 4px !important;
+  }
+
+  .start-wave-float {
+    right: 15px !important;
+    bottom: 15px !important;
+    transform: none !important;
+    transform-origin: 100% 100% !important;
+  }
+
+  .start-wave-float:hover:not(:disabled) {
+    transform: scale(1.05) !important;
+  }
+
+  .start-wave-float:active:not(:disabled) {
+    transform: scale(0.9) !important;
+  }
+
+  .gold-hud {
+    left: -19px !important;
+    bottom: -19px !important;
+    transform: none !important;
+    transform-origin: 0 100% !important;
+  }
+}
+
+@media (pointer: coarse) and (orientation: landscape) {
+  body.is-mobile-game-fullscreen .shell {
+    --mobile-title-h: 0px !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+    align-items: center !important;
+    justify-items: center !important;
+  }
+
+  body.is-mobile-game-fullscreen .topbar,
+  body.is-mobile-game-fullscreen .compact-topbar,
+  body.is-mobile-game-fullscreen .title-wrap,
+  body.is-mobile-game-fullscreen .title-wrap::before,
+  body.is-mobile-game-fullscreen .game-title-logo,
+  body.is-mobile-game-fullscreen .title-runner,
+  body.is-mobile-game-fullscreen .help-button {
+    display: none !important;
+  }
+
+  body.is-mobile-game-fullscreen .game-card {
+    width: min(100vw, calc(100dvh * 16 / 9)) !important;
+    height: min(100dvh, calc(100vw * 9 / 16)) !important;
+    align-self: center !important;
+  }
+
+  body.is-mobile-game-fullscreen .fullscreen-button {
+    background-image: url('./assets/ui/buttons/2.png?v=20260601-ui-icons-v1') !important;
+  }
+
+  body.is-mobile-game-fullscreen .gold-hud {
+    left: max(6px, env(safe-area-inset-left)) !important;
+    bottom: max(6px, env(safe-area-inset-bottom)) !important;
+    transform: scale(0.72) !important;
+    transform-origin: 0 100% !important;
+  }
+}
+
+/* 20260601: production-style stage-relative UI layout (desktop positions preserved, mobile scales from 1280x720) */
+.battlefield {
+  --ui-w: 1280;
+  --ui-h: 720;
+  --ui-safe: calc(100% * 15 / var(--ui-w));
+}
+
+.command-deck {
+  left: 50%;
+  bottom: 0;
+  width: calc(100% * 430 / 1280);
+  max-width: calc(100% - (100% * 320 / 1280));
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.command-deck .shop-strip,
+.command-deck .shop-card {
+  pointer-events: auto;
+}
+
+.shop-strip {
+  padding-left: calc(100% * 30 / 430);
+  padding-right: calc(100% * 30 / 430);
+  padding-bottom: calc(100% * 10 / 430);
+}
+
+.shop-strip .shop {
+  gap: calc(100% * 6 / 430);
+  transform: translateY(calc(100% * 6 / 430));
+}
+
+.start-wave-float {
+  right: calc(100% * 15 / 1280);
+  bottom: calc(100% * 15 / 720);
+  width: calc(100% * 146 / 1280);
+  height: calc(100% * 146 / 720);
+  padding: 0;
+  min-height: 0;
+  overflow: visible;
+  transform: none;
+  transform-origin: 50% 50%;
+  background-size: contain;
+}
+.start-wave-float:hover:not(:disabled) { transform: scale(1.05); }
+.start-wave-float:active:not(:disabled) { transform: scale(0.9); }
+
+.fullscreen-button,
+.restart-float.is-quick-restart {
+  width: calc(100% * 44 / 1280);
+  height: calc(100% * 44 / 720);
+  min-width: 30px;
+  min-height: 30px;
+  max-width: 44px;
+  max-height: 44px;
+  padding: 0;
+  border: 0;
+  background-size: contain;
+}
+.fullscreen-button {
+  right: calc(100% * 10 / 1280);
+  top: calc(100% * 10 / 720);
+}
+.restart-float.is-quick-restart {
+  right: calc(100% * 94 / 1280);
+  top: calc(100% * 10 / 720);
+  bottom: auto;
+  transform: none;
+}
+.restart-float.is-quick-restart:hover:not(:disabled) { transform: scale(1.05); }
+.restart-float.is-quick-restart:active:not(:disabled) { transform: scale(0.9); }
+
+.gold-hud {
+  left: calc(-100% * 19 / 1280);
+  bottom: calc(-100% * 19 / 720);
+  width: calc(100% * 286 / 1280);
+  height: calc(100% * 137 / 720);
+  min-width: 0;
+  padding: calc(100% * 12 / 1280) calc(100% * 29 / 1280) calc(100% * 12 / 1280) calc(100% * 52 / 1280);
+  gap: calc(100% * 8 / 1280);
+  transform: none;
+  background-size: contain;
+  overflow: visible;
+  pointer-events: auto;
+}
+.gold-hud .coin-icon {
+  width: 19.5% !important;
+  height: auto !important;
+  aspect-ratio: 1 / 1;
+  flex: 0 0 19.5% !important;
+}
+
+/* tighten visual hit areas: transparent image padding no longer creates huge clickable boxes */
+.start-wave-float::before,
+.gold-hud::before,
+.fullscreen-button::before,
+.restart-float.is-quick-restart::before {
+  content: "";
+  position: absolute;
+  inset: 12%;
+  border-radius: 999px;
+  pointer-events: none;
+}
+.start-wave-float { clip-path: inset(10% 10% 10% 10%); }
+.gold-hud { clip-path: inset(18% 9% 18% 9%); }
+.fullscreen-button,
+.restart-float.is-quick-restart { clip-path: inset(8% 8% 8% 8%); }
+
+@media (pointer: coarse) and (orientation: landscape) {
+  .shell {
+    --mobile-title-h: clamp(72px, 16dvh, 108px) !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    display: grid !important;
+    grid-template-rows: var(--mobile-title-h) minmax(0, 1fr) !important;
+    justify-items: center !important;
+    align-items: start !important;
+    overflow: hidden !important;
+  }
+
+  .topbar,
+  .compact-topbar,
+  .title-wrap {
+    display: flex !important;
+    width: min(100vw, calc((100dvh - var(--mobile-title-h)) * 16 / 9)) !important;
+    height: var(--mobile-title-h) !important;
+    min-height: var(--mobile-title-h) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    clip-path: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .title-wrap::before {
+    display: block !important;
+    left: 50% !important;
+    width: 100% !important;
+    bottom: calc(-1 * var(--mobile-title-h) * 0.15) !important;
+    height: calc(var(--mobile-title-h) * 2.25) !important;
+    transform: translateX(-50%) !important;
+  }
+
+  .game-title-logo {
+    display: block !important;
+    width: min(520px, 46vw) !important;
+    height: calc(var(--mobile-title-h) * 0.96) !important;
+    transform: translateY(calc(var(--mobile-title-h) * 0.10)) !important;
+  }
+
+  .title-runner {
+    display: block !important;
+    width: min(150px, 14vw) !important;
+    height: min(121px, 11.3vw) !important;
+    top: calc(var(--mobile-title-h) * 0.04) !important;
+    --runner-y: 0px !important;
+    z-index: 1 !important;
+  }
+
+  .help-button {
+    display: block !important;
+    left: calc(50% + min(150px, 18vw)) !important;
+    right: auto !important;
+    top: calc(var(--mobile-title-h) * 0.30) !important;
+    width: min(34px, calc(var(--mobile-title-h) * 0.62)) !important;
+    height: min(34px, calc(var(--mobile-title-h) * 0.62)) !important;
+    transform: translateX(-50%) !important;
+    z-index: 24 !important;
+  }
+
+  .game-card {
+    width: min(100vw, calc((100dvh - var(--mobile-title-h)) * 16 / 9)) !important;
+    height: min(calc(100dvh - var(--mobile-title-h)), calc(100vw * 9 / 16)) !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    align-self: start !important;
+  }
+
+  .battlefield,
+  canvas {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+  }
+
+  .command-deck {
+    width: calc(100% * 430 / 1280) !important;
+    max-width: calc(100% - (100% * 320 / 1280)) !important;
+    left: 50% !important;
+    bottom: 0 !important;
+    transform: translateX(-50%) !important;
+  }
+
+  .shop-strip,
+  body.is-mobile-game-fullscreen .shop-strip {
+    transform: none !important;
+    padding: 0 calc(100% * 30 / 430) calc(100% * 10 / 430) !important;
+  }
+
+  .shop-strip .shop,
+  body.is-mobile-game-fullscreen .shop-strip .shop {
+    transform: translateY(calc(100% * 6 / 430)) !important;
+    gap: calc(100% * 6 / 430) !important;
+  }
+
+  .shop-strip .shop-icon,
+  body.is-mobile-game-fullscreen .shop-strip .shop-icon {
+    margin-top: 23px !important;
+  }
+
+  .shop-strip .shop-item-label,
+  body.is-mobile-game-fullscreen .shop-strip .shop-item-label {
+    bottom: 4px !important;
+  }
+
+  .start-wave-float,
+  body.is-mobile-game-fullscreen .start-wave-float {
+    right: calc(100% * 15 / 1280) !important;
+    bottom: calc(100% * 15 / 720) !important;
+    width: calc(100% * 146 / 1280) !important;
+    height: calc(100% * 146 / 720) !important;
+    transform: none !important;
+  }
+
+  .gold-hud {
+    left: calc(-100% * 19 / 1280) !important;
+    bottom: calc(-100% * 19 / 720) !important;
+    width: calc(100% * 286 / 1280) !important;
+    height: calc(100% * 137 / 720) !important;
+    transform: none !important;
+  }
+
+  .fullscreen-button {
+    display: block !important;
+  }
+}
+
+@media (pointer: coarse) and (orientation: landscape) {
+  body.is-mobile-game-fullscreen .shell {
+    --mobile-title-h: 0px !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+    align-items: center !important;
+    justify-items: center !important;
+  }
+
+  body.is-mobile-game-fullscreen .topbar,
+  body.is-mobile-game-fullscreen .compact-topbar,
+  body.is-mobile-game-fullscreen .title-wrap,
+  body.is-mobile-game-fullscreen .title-wrap::before,
+  body.is-mobile-game-fullscreen .game-title-logo,
+  body.is-mobile-game-fullscreen .title-runner,
+  body.is-mobile-game-fullscreen .help-button {
+    display: none !important;
+  }
+
+  body.is-mobile-game-fullscreen .game-card {
+    width: min(100vw, calc(100dvh * 16 / 9)) !important;
+    height: min(100dvh, calc(100vw * 9 / 16)) !important;
+    align-self: center !important;
+  }
+
+  body.is-mobile-game-fullscreen .fullscreen-button {
+    background-image: url('./assets/ui/buttons/2.png?v=20260601-ui-icons-v1') !important;
+  }
+
+  body.is-mobile-game-fullscreen .gold-hud {
+    left: max(calc(-100% * 19 / 1280), env(safe-area-inset-left)) !important;
+    bottom: max(calc(-100% * 19 / 720), env(safe-area-inset-bottom)) !important;
+    transform: scale(0.88) !important;
+    transform-origin: 0 100% !important;
+  }
+}
+
+/* 20260601: restore visual UI edges; click boxes follow visible element bounds */
+.start-wave-float,
+.gold-hud,
+.fullscreen-button,
+.restart-float.is-quick-restart {
+  clip-path: none !important;
+  overflow: visible !important;
+}
+
+.start-wave-float,
+.fullscreen-button,
+.restart-float.is-quick-restart {
+  pointer-events: auto;
+}
+
+.gold-hud {
+  pointer-events: auto;
+}
