@@ -1620,3 +1620,43 @@ body.is-fullscreen .start-wave-float {
     align-self: center !important;
   }
 }
+
+/* 20260602: fix title banner clipping and runner vertical position */
+.topbar,
+.compact-topbar,
+.title-wrap {
+  overflow: visible !important;
+}
+.title-wrap {
+  clip-path: inset(-420px 0 -420px 0) !important;
+}
+
+/* PC/local: restore the uncropped banner depth below the title row. */
+.title-wrap::before {
+  bottom: calc(-1 * min(34px, calc(min(1280px, calc(100vw - 20px)) * 34 / 1280))) !important;
+  height: calc(min(1280px, calc(100vw - 20px)) * 320 / 1280) !important;
+}
+.title-runner {
+  top: 0 !important;
+  --runner-y: calc(min(1280px, calc(100vw - 20px)) * -8 / 1280) !important;
+}
+
+@media (pointer: coarse) and (orientation: landscape) {
+  body:not(.is-mobile-game-fullscreen) .topbar,
+  body:not(.is-mobile-game-fullscreen) .compact-topbar,
+  body:not(.is-mobile-game-fullscreen) .title-wrap {
+    overflow: visible !important;
+    clip-path: inset(-220px 0 -220px 0) !important;
+  }
+
+  body:not(.is-mobile-game-fullscreen) .title-wrap::before {
+    bottom: calc(-1 * var(--mobile-stage-w) * 34 / 1280) !important;
+    height: calc(var(--mobile-stage-w) * 320 / 1280) !important;
+  }
+
+  /* Android/iOS: bear was too low; move the whole runner up without changing frame animation. */
+  body:not(.is-mobile-game-fullscreen) .title-runner {
+    top: calc(var(--mobile-stage-w) * -22 / 1280) !important;
+    --runner-y: 0px !important;
+  }
+}
