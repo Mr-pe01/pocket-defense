@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   font-family: Inter, "Microsoft YaHei", system-ui, sans-serif;
   color: #e5edf8;
   background: #09111f;
@@ -1025,7 +1025,8 @@ body.is-fullscreen .restart-float.is-quick-restart {
 }
 
 
-/* 20260602: clean unified UI layout - based on 1280x720 battlefield coordinates */
+
+/* 20260602: clean final layout - banner outside, game window always 16:9, HUD follows game window */
 :root {
   --stage-w: 1280;
   --stage-h: 720;
@@ -1273,7 +1274,7 @@ body.is-mobile-game-fullscreen .fullscreen-button {
 .start-wave-float {
   position: absolute;
   right: var(--ui-edge) !important;
-  bottom: var(--ui-bottom) !important;
+  bottom: calc(var(--ui-bottom) + 14px) !important;
   width: 249px !important;
   height: 99px !important;
   min-width: 0;
@@ -1285,13 +1286,14 @@ body.is-mobile-game-fullscreen .fullscreen-button {
   background-size: contain;
   box-shadow: none;
   z-index: 6;
-  transform: scale(calc(var(--stage-scale) * 0.82)) !important;
-  transform-origin: 100% 100% !important;
-  clip-path: inset(10% 14% 10% 14%);
-  overflow: hidden;
+  transform: scale(calc(var(--stage-scale) * 0.98)) !important;
+  transform-origin: 50% 50% !important;
+  clip-path: none;
+  overflow: visible;
 }
-.start-wave-float:hover:not(:disabled) { transform: scale(calc(var(--stage-scale) * 0.86)) !important; }
-.start-wave-float:active:not(:disabled) { transform: scale(calc(var(--stage-scale) * 0.74)) !important; }
+.start-wave-float:hover:not(:disabled) { transform: scale(calc(var(--stage-scale) * 1.03)) !important; }
+.start-wave-float:active:not(:disabled) { transform: scale(calc(var(--stage-scale) * 0.88)) !important; }
+body.is-fullscreen .start-wave-float { bottom: 24px !important; }
 
 .tower-action-menu {
   position: absolute;
@@ -1427,19 +1429,19 @@ button, canvas, .battlefield, .shop-card, .gold-hud, .tower-action-menu, .game-c
     justify-content: center;
   }
   .title-wrap::before {
-    bottom: calc(-1 * var(--mobile-title-h) * 0.06);
-    height: calc(var(--mobile-title-h) * 1.72);
+    bottom: calc(-1 * var(--mobile-title-h) * 0.10);
+    height: calc(var(--mobile-title-h) * 1.78);
     background-size: 100% auto;
   }
   .game-title-logo {
-    width: min(420px, 40vw);
-    height: calc(var(--mobile-title-h) * 0.86);
-    transform: translateY(calc(var(--mobile-title-h) * 0.04));
+    width: min(500px, 48vw);
+    height: calc(var(--mobile-title-h) * 0.98);
+    transform: translateY(calc(var(--mobile-title-h) * 0.12));
   }
   .title-runner {
-    width: min(118px, 11vw);
-    height: min(95px, 8.9vw);
-    top: calc(var(--mobile-title-h) * -0.04);
+    width: min(108px, 10vw);
+    height: min(87px, 8.1vw);
+    top: calc(var(--mobile-title-h) * 0.03);
     --runner-y: 0px;
   }
   .help-button {
@@ -1460,12 +1462,12 @@ button, canvas, .battlefield, .shop-card, .gold-hud, .tower-action-menu, .game-c
     align-self: start;
   }
   .battlefield, canvas { border-radius: 0; }
-  .battlefield { --ui-bottom: 5px; --ui-edge: 4px; }
-  .command-deck { transform: translateX(-50%) scale(calc(var(--stage-scale) * 0.82)) !important; }
-  .gold-hud { transform: scale(calc(var(--stage-scale) * 0.66)); }
-  .start-wave-float { transform: scale(calc(var(--stage-scale) * 0.72)) !important; }
-  .start-wave-float:hover:not(:disabled) { transform: scale(calc(var(--stage-scale) * 0.75)) !important; }
-  .start-wave-float:active:not(:disabled) { transform: scale(calc(var(--stage-scale) * 0.64)) !important; }
+  .battlefield { --ui-bottom: 8px; --ui-edge: 6px; }
+  .command-deck { transform: translateX(-50%) scale(calc(var(--stage-scale) * 0.88)) !important; }
+  .gold-hud { transform: scale(calc(var(--stage-scale) * 0.72)); }
+  .start-wave-float { transform: scale(calc(var(--stage-scale) * 0.90)) !important; bottom: 12px !important; }
+  .start-wave-float:hover:not(:disabled) { transform: scale(calc(var(--stage-scale) * 0.94)) !important; }
+  .start-wave-float:active:not(:disabled) { transform: scale(calc(var(--stage-scale) * 0.80)) !important; }
   .fullscreen-button { right: 8px; top: 8px; width: 40px; height: 40px; }
   .restart-float.is-quick-restart { right: 52px; top: 8px; width: 40px; height: 40px; }
   .shop-cancel-zone { width: min(440px, calc(100% - 180px)); height: 82px; font-size: 15px; }
@@ -1492,135 +1494,3 @@ button, canvas, .battlefield, .shop-card, .gold-hud, .tower-action-menu, .game-c
   }
 }
 
-
-/* 20260602: fix start button clipping, center-scale animation, and bottom baseline */
-.battlefield {
-  --ui-bottom: 10px;
-}
-
-.command-deck {
-  bottom: calc(var(--ui-bottom) + 2px) !important;
-}
-
-.gold-hud {
-  bottom: calc(var(--ui-bottom) + 2px) !important;
-}
-
-.start-wave-float {
-  width: 249px !important;
-  height: 99px !important;
-  right: var(--ui-edge) !important;
-  bottom: calc(var(--ui-bottom) + 7px) !important;
-  overflow: visible !important;
-  clip-path: none !important;
-  transform: translate(0, 0) scale(calc(var(--stage-scale) * 0.92)) !important;
-  transform-origin: 50% 50% !important;
-}
-.start-wave-float:hover:not(:disabled) {
-  transform: translate(0, 0) scale(calc(var(--stage-scale) * 0.97)) !important;
-}
-.start-wave-float:active:not(:disabled) {
-  transform: translate(0, 0) scale(calc(var(--stage-scale) * 0.83)) !important;
-}
-
-@media (pointer: coarse) and (orientation: landscape) {
-  .battlefield { --ui-bottom: 5px; }
-  .command-deck { bottom: var(--ui-bottom) !important; }
-  .gold-hud { bottom: var(--ui-bottom) !important; }
-  .start-wave-float {
-    bottom: calc(var(--ui-bottom) + 4px) !important;
-    overflow: visible !important;
-    clip-path: none !important;
-    transform: translate(0, 0) scale(calc(var(--stage-scale) * 0.78)) !important;
-    transform-origin: 50% 50% !important;
-  }
-  .start-wave-float:hover:not(:disabled) {
-    transform: translate(0, 0) scale(calc(var(--stage-scale) * 0.82)) !important;
-  }
-  .start-wave-float:active:not(:disabled) {
-    transform: translate(0, 0) scale(calc(var(--stage-scale) * 0.70)) !important;
-  }
-}
-
-/* 20260602: PC/mobile layout polish after unified UI refactor */
-/* 回答用户建议：底部三组 UI 继续以 battlefield 为基准，使用统一安全边距 + 组内等比缩放；不再拉伸美术资源。 */
-.battlefield {
-  --ui-bottom: 10px;
-  --ui-edge: 12px;
-}
-
-/* PC: start button slightly larger; gold panel a little lower. */
-.gold-hud {
-  bottom: 6px !important;
-}
-.start-wave-float {
-  bottom: 14px !important;
-  transform: scale(calc(var(--stage-scale) * 0.98)) !important;
-  transform-origin: 50% 50% !important;
-}
-.start-wave-float:hover:not(:disabled) {
-  transform: scale(calc(var(--stage-scale) * 1.03)) !important;
-}
-.start-wave-float:active:not(:disabled) {
-  transform: scale(calc(var(--stage-scale) * 0.88)) !important;
-}
-
-/* PC fullscreen: lift the start button away from the very bottom while keeping the same scale system. */
-body.is-fullscreen .start-wave-float {
-  bottom: 24px !important;
-  transform: scale(calc(var(--stage-scale) * 0.98)) !important;
-}
-body.is-fullscreen .start-wave-float:hover:not(:disabled) {
-  transform: scale(calc(var(--stage-scale) * 1.03)) !important;
-}
-body.is-fullscreen .start-wave-float:active:not(:disabled) {
-  transform: scale(calc(var(--stage-scale) * 0.88)) !important;
-}
-
-@media (pointer: coarse) and (orientation: landscape) {
-  /* Mobile title: logo larger and lower; banner/runner are adjusted independently. */
-  .game-title-logo {
-    width: min(500px, 48vw) !important;
-    height: calc(var(--mobile-title-h) * 0.98) !important;
-    transform: translateY(calc(var(--mobile-title-h) * 0.12)) !important;
-  }
-  .title-wrap::before {
-    bottom: calc(-1 * var(--mobile-title-h) * 0.10) !important;
-    height: calc(var(--mobile-title-h) * 1.78) !important;
-  }
-  .title-runner {
-    width: min(108px, 10vw) !important;
-    height: min(87px, 8.1vw) !important;
-    top: calc(var(--mobile-title-h) * 0.03) !important;
-    --runner-y: 0px !important;
-  }
-
-  /* Mobile bottom HUD: align all three groups to the same bottom safe line and make them usable. */
-  .battlefield {
-    --ui-bottom: 8px;
-    --ui-edge: 6px;
-  }
-  .command-deck {
-    bottom: var(--ui-bottom) !important;
-    transform: translateX(-50%) scale(calc(var(--stage-scale) * 0.88)) !important;
-    transform-origin: 50% 100% !important;
-  }
-  .gold-hud {
-    left: var(--ui-edge) !important;
-    bottom: var(--ui-bottom) !important;
-    transform: scale(calc(var(--stage-scale) * 0.72)) !important;
-    transform-origin: 0 100% !important;
-  }
-  .start-wave-float {
-    right: var(--ui-edge) !important;
-    bottom: 12px !important;
-    transform: scale(calc(var(--stage-scale) * 0.90)) !important;
-    transform-origin: 50% 50% !important;
-  }
-  .start-wave-float:hover:not(:disabled) {
-    transform: scale(calc(var(--stage-scale) * 0.94)) !important;
-  }
-  .start-wave-float:active:not(:disabled) {
-    transform: scale(calc(var(--stage-scale) * 0.80)) !important;
-  }
-}
