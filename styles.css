@@ -1513,15 +1513,14 @@ body.is-mobile-game-fullscreen .app-frame {
   grid-template-rows: 1fr !important;
 }
 
-/* keep title contents in one 1280x156 logic banner, crop only horizontal overflow */
+/* keep title contents in one 1280x156 logic banner, crop only horizontal overflow without scrollbars */
 .topbar,
-.compact-topbar {
-  overflow-x: hidden !important;
-  overflow-y: visible !important;
+.compact-topbar,
+.title-wrap {
+  overflow: visible !important;
+  clip-path: inset(-260px 0 -260px 0) !important;
 }
 .title-wrap {
-  overflow-x: hidden !important;
-  overflow-y: visible !important;
   transform: translateY(calc(-100% * 10 / 156));
 }
 .title-wrap::before {
