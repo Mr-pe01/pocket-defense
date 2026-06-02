@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   font-family: Inter, "Microsoft YaHei", system-ui, sans-serif;
   color: #e5edf8;
   background: #09111f;
@@ -1494,3 +1494,39 @@ button, canvas, .battlefield, .shop-card, .gold-hud, .tower-action-menu, .game-c
   }
 }
 
+
+/* 20260602: fix mobile/PC start button layout box - size the real box, not only transform the art */
+.start-wave-float {
+  width: calc(249px * var(--stage-scale) * 0.98) !important;
+  height: calc(99px * var(--stage-scale) * 0.98) !important;
+  right: var(--ui-edge) !important;
+  bottom: calc(var(--ui-bottom) + 14px) !important;
+  transform: none !important;
+  transform-origin: 50% 50% !important;
+}
+.start-wave-float:hover:not(:disabled) {
+  transform: scale(1.05) !important;
+}
+.start-wave-float:active:not(:disabled) {
+  transform: scale(0.9) !important;
+}
+body.is-fullscreen .start-wave-float {
+  bottom: 24px !important;
+}
+
+@media (pointer: coarse) and (orientation: landscape) {
+  .start-wave-float {
+    width: calc(249px * var(--stage-scale) * 0.90) !important;
+    height: calc(99px * var(--stage-scale) * 0.90) !important;
+    right: var(--ui-edge) !important;
+    bottom: 12px !important;
+    transform: none !important;
+    transform-origin: 50% 50% !important;
+  }
+  .start-wave-float:hover:not(:disabled) {
+    transform: scale(1.05) !important;
+  }
+  .start-wave-float:active:not(:disabled) {
+    transform: scale(0.9) !important;
+  }
+}
