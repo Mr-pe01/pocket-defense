@@ -1118,7 +1118,7 @@ body {
 
 .battlefield {
   --stage-scale: 1;
-  --ui-bottom: 12px;
+  --ui-bottom: 6px;
   --ui-edge: 12px;
   position: relative;
   width: 100% !important;
@@ -1521,23 +1521,32 @@ body.is-mobile-game-fullscreen .app-frame {
   clip-path: inset(-260px 0 -260px 0) !important;
 }
 .title-wrap {
-  transform: translateY(calc(-100% * 10 / 156));
+  transform: translateY(calc(-100% * 4 / 156));
 }
 .title-wrap::before {
-  bottom: calc(-100% * 8 / 156) !important;
+  bottom: calc(-100% * 2 / 156) !important;
 }
 .game-title-logo {
   transform: translateY(calc(100% * 8 / 156)) !important;
 }
 .title-runner {
-  --runner-y: calc(-100% * 30 / 156) !important;
+  --runner-y: calc(-100% * 22 / 156) !important;
 }
 
 @media (pointer: coarse) and (orientation: landscape) {
+  .title-wrap {
+    transform: translateY(calc(100% * 2 / 156));
+  }
+  .title-wrap::before {
+    bottom: calc(-100% * 8 / 156) !important;
+  }
+  .title-runner {
+    --runner-y: calc(-100% * 10 / 156) !important;
+  }
   .battlefield {
-    --ui-bottom: 4px;
+    --ui-bottom: -6px;
   }
   .start-wave-float {
-    bottom: calc(var(--ui-bottom) + 6px) !important;
+    bottom: calc(var(--ui-bottom) - 2px) !important;
   }
 }

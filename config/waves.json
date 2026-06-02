@@ -94,8 +94,8 @@
         "name": "极速",
         "speedMultiplier": 2,
         "duration": 6,
-        "cooldown": 8,
-        "triggerDelay": 1.2
+        "cooldown": 6,
+        "triggerDelay": 0.8
       }
     }
   }

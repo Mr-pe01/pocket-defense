@@ -330,6 +330,7 @@ function newGame(options = {}) {
     spawnTimer: 0,
     currentWaveTotal: 0,
     currentWaveSpawned: 0,
+    bossReady: false,
     bossActive: false,
     bossSpawned: false,
     bossDefeated: false,
@@ -1291,6 +1292,7 @@ function createWaveRetrySnapshot() {
   snapshot.currentWaveSpawned = 0;
   snapshot.currentWaveTotal = 0;
   snapshot.waveAlive = false;
+  snapshot.bossReady = false;
   snapshot.bossActive = false;
   snapshot.screenShake = { time: 0, duration: 0, intensity: 0 };
   return snapshot;
@@ -1346,7 +1348,7 @@ function updateMainActionButton() {
     startWaveBtn.textContent = '开始战斗';
     startWaveBtn.classList.add('button-start');
   } else {
-    startWaveBtn.textContent = '开始战斗';
+    startWaveBtn.textContent = game.bossReady ? '开始BOSS' : '开始战斗';
     startWaveBtn.classList.add('button-start');
     startWaveBtn.disabled = game.phase !== 'prep';
   }
@@ -1393,6 +1395,7 @@ function startWave() {
   game.spawnQueue = [];
   game.currentWaveTotal = spawns.reduce((sum, group) => sum + group.count, 0);
   game.currentWaveSpawned = 0;
+  game.bossReady = false;
   game.bossActive = false;
   let delay = 0;
   for (const group of spawns) {
@@ -1423,7 +1426,8 @@ function finishWave() {
   if (game.waveIndex >= waveCfg.waves.length) {
     const bossCfg = waveCfg.boss;
     if (bossCfg?.enabled && !game.bossDefeated) {
-      startBoss();
+      game.bossReady = true;
+      setMessage(`第 ${wave.wave} 波结束：奖励 ${wave.reward}，金矿收入 ${mineIncome}。现在可以调整建筑布置，准备好后点击开始战斗挑战 BOSS。`);
     } else {
       game.phase = 'ended';
       game.result = 'win';
@@ -1442,6 +1446,7 @@ function startBoss() {
   game.hasStartedOnce = true;
   game.selected = null;
   game.waveAlive = true;
+  game.bossReady = false;
   game.bossActive = true;
   game.bossSpawned = true;
   game.spawnQueue = [];
@@ -3230,6 +3235,14 @@ function updateFullscreenUi() {
   const isFullscreen = !!document.fullscreenElement || document.body.classList.contains('is-mobile-game-fullscreen');
   document.body.classList.toggle('is-fullscreen', isFullscreen && !!document.fullscreenElement);
   updateStageUiScale();
+  requestAnimationFrame(() => {
+    updateStageUiScale();
+    restartTitleRunnerMotion();
+  });
+  setTimeout(() => {
+    updateStageUiScale();
+    restartTitleRunnerMotion();
+  }, 260);
   if (!fullscreenBtn) return;
   fullscreenBtn.textContent = '';
   fullscreenBtn.setAttribute('aria-label', isFullscreen ? '退出全屏' : '全屏');
@@ -3511,8 +3524,15 @@ fullscreenBtn?.addEventListener('click', event => {
   toggleFullscreen();
 });
 document.addEventListener('fullscreenchange', updateFullscreenUi);
-window.addEventListener('resize', updateStageUiScale);
-window.visualViewport?.addEventListener('resize', updateStageUiScale);
+window.addEventListener('resize', () => {
+  updateStageUiScale();
+  requestAnimationFrame(updateStageUiScale);
+});
+window.visualViewport?.addEventListener('resize', () => {
+  updateStageUiScale();
+  requestAnimationFrame(updateStageUiScale);
+});
+window.visualViewport?.addEventListener('scroll', updateStageUiScale);
 updateFullscreenUi();
 
 document.addEventListener('keydown', handlePortalDebugKey);
@@ -3599,6 +3619,7 @@ function playTitleRunnerAction(durationMs = TITLE_RUNNER_ACTION_DURATION) {
         clearInterval(timer);
         titleRunnerEl.classList.remove('is-action');
         setTitleRunnerFrame(0);
+        requestAnimationFrame(() => setTitleRunnerFrame(0));
         resolve();
         return;
       }
@@ -3661,6 +3682,7 @@ async function runTitleRunnerOnce() {
   }
   await playTitleRunnerAction(TITLE_RUNNER_ACTION_DURATION);
   titleRunnerEl.classList.remove('is-action');
+  setTitleRunnerFrame(0);
   startTitleRunnerFrameLoop();
   await animateTitleRunnerSegment(stopX, endX, secondDuration);
   setTitleRunnerX(endX);
@@ -3673,6 +3695,16 @@ function setTitleRunnerAtHelp() {
   const runnerWidth = titleRunnerEl.getBoundingClientRect().width || 151;
   const x = (helpRect.left + helpRect.width * 0.5) - wrapRect.left - runnerWidth * 0.5 - 30;
   setTitleRunnerX(x);
+}
+
+function restartTitleRunnerMotion() {
+  if (!titleRunnerEl) return;
+  if (titleRunnerMoveRaf) cancelAnimationFrame(titleRunnerMoveRaf);
+  if (titleRunnerFrameTimer) clearInterval(titleRunnerFrameTimer);
+  titleRunnerMoveRaf = null;
+  titleRunnerFrameTimer = null;
+  titleRunnerPlaying = false;
+  requestAnimationFrame(() => startTitleRunnerLoop());
 }
 
 function startTitleRunnerLoop() {
