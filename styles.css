@@ -1530,3 +1530,93 @@ body.is-fullscreen .start-wave-float {
     transform: scale(0.9) !important;
   }
 }
+
+/* 20260602: unified title banner layout across PC / Android / iOS */
+/* The header uses the same 1280x156 logical banner as PC. Mobile only scales the whole banner + game window together. */
+.title-wrap {
+  width: min(1280px, calc(100vw - 20px));
+  height: calc(min(1280px, calc(100vw - 20px)) * 156 / 1280);
+  overflow: hidden;
+  clip-path: none;
+}
+.compact-topbar {
+  min-height: calc(min(1280px, calc(100vw - 20px)) * 156 / 1280);
+}
+.title-wrap::before {
+  left: 50%;
+  bottom: calc(-1 * min(34px, calc(min(1280px, calc(100vw - 20px)) * 34 / 1280)));
+  width: 100%;
+  height: calc(100% * 320 / 156);
+  transform: translateX(-50%);
+  background-size: 100% auto;
+}
+.title-runner {
+  width: calc(100% * 191 / 1280);
+  height: calc(100% * 154 / 156);
+  top: 0;
+  --runner-y: calc(100% * 4 / 156);
+}
+.game-title-logo {
+  width: calc(100% * 840 / 1280);
+  height: calc(100% * 173 / 156);
+  transform: translateY(calc(100% * 35 / 156));
+}
+.help-button {
+  left: calc(50% + (100% * 200 / 1280));
+  top: calc(100% * 46 / 156);
+  width: calc(100% * 45 / 1280);
+  height: calc(100% * 45 / 156);
+}
+
+@media (pointer: coarse) and (orientation: landscape) {
+  body:not(.is-mobile-game-fullscreen) .shell {
+    --mobile-stage-w: min(100vw, calc(100dvh * 1280 / 876));
+    width: var(--mobile-stage-w);
+    height: 100dvh;
+    grid-template-rows: calc(var(--mobile-stage-w) * 156 / 1280) calc(var(--mobile-stage-w) * 720 / 1280);
+    align-content: center;
+    justify-content: center;
+    place-items: center;
+  }
+
+  body:not(.is-mobile-game-fullscreen) .topbar,
+  body:not(.is-mobile-game-fullscreen) .compact-topbar,
+  body:not(.is-mobile-game-fullscreen) .title-wrap {
+    width: var(--mobile-stage-w) !important;
+    height: calc(var(--mobile-stage-w) * 156 / 1280) !important;
+    min-height: calc(var(--mobile-stage-w) * 156 / 1280) !important;
+    overflow: hidden !important;
+  }
+
+  body:not(.is-mobile-game-fullscreen) .title-wrap::before {
+    bottom: calc(-1 * var(--mobile-stage-w) * 34 / 1280) !important;
+    height: calc(var(--mobile-stage-w) * 320 / 1280) !important;
+    background-size: 100% auto !important;
+  }
+
+  body:not(.is-mobile-game-fullscreen) .game-title-logo {
+    width: calc(var(--mobile-stage-w) * 840 / 1280) !important;
+    height: calc(var(--mobile-stage-w) * 173 / 1280) !important;
+    transform: translateY(calc(var(--mobile-stage-w) * 35 / 1280)) !important;
+  }
+
+  body:not(.is-mobile-game-fullscreen) .title-runner {
+    width: calc(var(--mobile-stage-w) * 191 / 1280) !important;
+    height: calc(var(--mobile-stage-w) * 154 / 1280) !important;
+    top: 0 !important;
+    --runner-y: calc(var(--mobile-stage-w) * 4 / 1280) !important;
+  }
+
+  body:not(.is-mobile-game-fullscreen) .help-button {
+    left: calc(50% + (var(--mobile-stage-w) * 200 / 1280)) !important;
+    top: calc(var(--mobile-stage-w) * 46 / 1280) !important;
+    width: calc(var(--mobile-stage-w) * 45 / 1280) !important;
+    height: calc(var(--mobile-stage-w) * 45 / 1280) !important;
+  }
+
+  body:not(.is-mobile-game-fullscreen) .game-card {
+    width: var(--mobile-stage-w) !important;
+    height: calc(var(--mobile-stage-w) * 720 / 1280) !important;
+    align-self: center !important;
+  }
+}
