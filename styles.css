@@ -1541,12 +1541,12 @@ body.is-mobile-game-fullscreen .app-frame {
     bottom: calc(-100% * 8 / 156) !important;
   }
   .title-runner {
-    --runner-y: calc(-100% * 10 / 156) !important;
+    --runner-y: calc(-100% * 16 / 156) !important;
   }
   .battlefield {
-    --ui-bottom: -6px;
+    --ui-bottom: 2px;
   }
   .start-wave-float {
-    bottom: calc(var(--ui-bottom) - 2px) !important;
+    bottom: calc(var(--ui-bottom) + 6px) !important;
   }
 }

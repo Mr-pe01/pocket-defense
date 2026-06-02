@@ -1863,7 +1863,7 @@ function fireTower(tower, slot, target, stat, targets = [target]) {
         const ox = origin.x + Math.cos(aimAngle + Math.PI / 2) * spread;
         const oy = origin.y + Math.sin(aimAngle + Math.PI / 2) * spread;
         damageEnemy(iceTarget, stat.damage, tower.type, stat);
-        spawnHitEffect('snowBossTowerHit', iceHit.x, iceHit.y, { scale: 0.28, duration: 0.42, composite: 'screen' });
+        spawnHitEffect('snowBossTowerHit', iceHit.x, iceHit.y, { scale: 0.28, duration: 0.25, composite: 'screen' });
         game.projectiles.push({ type: 'imageProjectile', imageKey: 'ice', x: ox, y: oy, tx: iceHit.x, ty: iceHit.y, age: 0, life: 0.16, maxWidth: iceAsset.maxWidth, maxHeight: iceAsset.maxHeight, color });
       });
     } else {
