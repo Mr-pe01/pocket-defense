@@ -73,6 +73,13 @@ let suppressNextCanvasClick = false;
 let goldHudClickCount = 0;
 let goldHudFirstClickTime = 0;
 
+function updateStageUiScale() {
+  if (!battlefieldEl) return;
+  const rect = battlefieldEl.getBoundingClientRect();
+  const scale = Math.max(0.35, Math.min(rect.width / 1280, rect.height / 720));
+  battlefieldEl.style.setProperty('--stage-scale', scale.toFixed(4));
+}
+
 const CONFIG_FILES = [
   './config/game.json',
   './config/towers.json',
@@ -3217,6 +3224,7 @@ function handleGoldHudClick(event) {
 function updateFullscreenUi() {
   const isFullscreen = !!document.fullscreenElement || document.body.classList.contains('is-mobile-game-fullscreen');
   document.body.classList.toggle('is-fullscreen', isFullscreen && !!document.fullscreenElement);
+  updateStageUiScale();
   if (!fullscreenBtn) return;
   fullscreenBtn.textContent = '';
   fullscreenBtn.setAttribute('aria-label', isFullscreen ? '退出全屏' : '全屏');
@@ -3497,6 +3505,8 @@ fullscreenBtn?.addEventListener('click', event => {
   toggleFullscreen();
 });
 document.addEventListener('fullscreenchange', updateFullscreenUi);
+window.addEventListener('resize', updateStageUiScale);
+window.visualViewport?.addEventListener('resize', updateStageUiScale);
 updateFullscreenUi();
 
 document.addEventListener('keydown', handlePortalDebugKey);
@@ -3674,6 +3684,7 @@ function startTitleRunnerLoop() {
 
 loadConfig().then(() => {
   newGame();
+  updateStageUiScale();
   startTitleRunnerLoop();
   requestAnimationFrame(loop);
 }).catch(error => {
