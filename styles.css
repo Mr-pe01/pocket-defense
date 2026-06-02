@@ -1160,8 +1160,8 @@ body.is-mobile-game-fullscreen .compact-topbar {
   right: 10px;
   top: 10px;
   z-index: 40;
-  width: 44px;
-  height: 44px;
+  width: 31px;
+  height: 31px;
   display: block;
   padding: 0;
   border: 0;
@@ -1182,11 +1182,11 @@ body.is-mobile-game-fullscreen .fullscreen-button {
 
 .restart-float.is-quick-restart {
   position: absolute;
-  right: 58px;
+  right: 45px;
   top: 10px;
   bottom: auto;
-  width: 44px;
-  height: 44px;
+  width: 31px;
+  height: 31px;
   padding: 0;
   transform: none;
   z-index: 39;

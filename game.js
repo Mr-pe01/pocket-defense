@@ -1863,6 +1863,7 @@ function fireTower(tower, slot, target, stat, targets = [target]) {
         const ox = origin.x + Math.cos(aimAngle + Math.PI / 2) * spread;
         const oy = origin.y + Math.sin(aimAngle + Math.PI / 2) * spread;
         damageEnemy(iceTarget, stat.damage, tower.type, stat);
+        spawnHitEffect('snowBossTowerHit', iceHit.x, iceHit.y, { scale: 0.28, duration: 0.42, composite: 'screen' });
         game.projectiles.push({ type: 'imageProjectile', imageKey: 'ice', x: ox, y: oy, tx: iceHit.x, ty: iceHit.y, age: 0, life: 0.16, maxWidth: iceAsset.maxWidth, maxHeight: iceAsset.maxHeight, color });
       });
     } else {
@@ -1877,10 +1878,10 @@ function fireTower(tower, slot, target, stat, targets = [target]) {
   }
 }
 
-function spawnHitEffect(effect, x, y) {
+function spawnHitEffect(effect, x, y, options = {}) {
   const def = SPRITE_SHEET_EFFECTS[effect];
   if (!def) return;
-  game.projectiles.push({ type: 'spriteEffect', effect, x, y, age: 0, duration: def.duration });
+  game.projectiles.push({ type: 'spriteEffect', effect, x, y, age: 0, duration: options.duration ?? def.duration, scale: options.scale ?? 1, composite: options.composite });
 }
 
 function updateProjectiles(dt) {
@@ -2748,7 +2749,7 @@ function drawSpriteEffect(p) {
   const dw = (p.width || def.width || sw) * scale;
   const dh = (p.height || def.height || sh) * scale;
   ctx.save();
-  ctx.globalCompositeOperation = def.composite || 'source-over';
+  ctx.globalCompositeOperation = p.composite || def.composite || 'source-over';
   ctx.globalAlpha = 1;
   ctx.drawImage(img, sx, sy, sw, sh, drawX - dw / 2, drawY - dh / 2, dw, dh);
   ctx.restore();

@@ -4,7 +4,7 @@
       "name": "雷塔",
       "icon": "ϟ",
       "color": "#8b5cf6",
-      "cost": 20,
+      "cost": 22,
       "description": "群攻溅射，命中后释放雷电范围伤害，适合处理成群敌人。",
       "sprite": {
         "footY": 0.86,
@@ -17,16 +17,16 @@
         ]
       },
       "levels": [
-        { "damage": 18, "range": 138, "cooldown": 1.25, "splash": 65 },
-        { "damage": 35, "range": 156, "cooldown": 1.12, "splash": 82 },
-        { "damage": 64, "range": 180, "cooldown": 1.0, "splash": 100 }
+        { "damage": 18, "range": 138, "cooldown": 1.25, "splash": 85 },
+        { "damage": 35, "range": 156, "cooldown": 1.12, "splash": 107 },
+        { "damage": 64, "range": 180, "cooldown": 1.0, "splash": 130 }
       ]
     },
     "ice": {
       "name": "冰塔",
       "icon": "❄",
       "color": "#67e8f9",
-      "cost": 20,
+      "cost": 22,
       "description": "单体低输出，但能减速敌人，为其他塔创造输出窗口。",
       "sprite": {
         "footY": 0.86,
@@ -48,7 +48,7 @@
       "name": "光塔",
       "icon": "✦",
       "color": "#facc15",
-      "cost": 25,
+      "cost": 26,
       "description": "金色激光，单体高输出，适合点杀厚血敌人。",
       "sprite": {
         "footY": 0.86,
