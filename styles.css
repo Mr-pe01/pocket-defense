@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   font-family: Inter, "Microsoft YaHei", system-ui, sans-serif;
   color: #e5edf8;
   background: #09111f;
@@ -1486,3 +1486,43 @@ button, canvas, .battlefield, .shop-card, .gold-hud, .tower-action-menu, .game-c
   }
 }
 
+
+/* 20260602: use real visualViewport size for app-frame, avoids Android/iOS browser bar half-screen bugs */
+:root {
+  --app-vw: 100vw;
+  --app-vh: 100vh;
+}
+
+.shell {
+  width: var(--app-vw) !important;
+  height: var(--app-vh) !important;
+}
+
+.app-frame {
+  width: min(var(--app-vw), calc(var(--app-vh) * 1280 / 876)) !important;
+  height: min(var(--app-vh), calc(var(--app-vw) * 876 / 1280)) !important;
+  grid-template-rows: calc(100% * 156 / 876) calc(100% * 720 / 876) !important;
+  align-self: center !important;
+  justify-self: center !important;
+}
+
+body.is-fullscreen .app-frame,
+body.is-mobile-game-fullscreen .app-frame {
+  width: min(var(--app-vw), calc(var(--app-vh) * 16 / 9)) !important;
+  height: min(var(--app-vh), calc(var(--app-vw) * 9 / 16)) !important;
+  grid-template-rows: 1fr !important;
+}
+
+/* keep title contents inside the fixed 1280x156 banner instead of drifting below it */
+.title-wrap {
+  overflow: visible !important;
+}
+.title-wrap::before {
+  bottom: calc(-100% * 20 / 156) !important;
+}
+.game-title-logo {
+  transform: translateY(calc(100% * 18 / 156)) !important;
+}
+.title-runner {
+  --runner-y: calc(-100% * 18 / 156) !important;
+}

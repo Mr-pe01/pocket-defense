@@ -74,6 +74,11 @@ let goldHudClickCount = 0;
 let goldHudFirstClickTime = 0;
 
 function updateStageUiScale() {
+  const viewport = window.visualViewport;
+  const viewWidth = Math.max(1, viewport?.width || window.innerWidth || document.documentElement.clientWidth || 1280);
+  const viewHeight = Math.max(1, viewport?.height || window.innerHeight || document.documentElement.clientHeight || 720);
+  document.documentElement.style.setProperty('--app-vw', `${viewWidth}px`);
+  document.documentElement.style.setProperty('--app-vh', `${viewHeight}px`);
   if (!battlefieldEl) return;
   const rect = battlefieldEl.getBoundingClientRect();
   const scale = Math.max(0.35, Math.min(rect.width / 1280, rect.height / 720));
@@ -3239,6 +3244,7 @@ async function toggleFullscreen() {
   if (!fullscreenBtn) return;
   if (isCoarsePointerDevice()) {
     document.body.classList.toggle('is-mobile-game-fullscreen');
+    requestAnimationFrame(updateStageUiScale);
     updateFullscreenUi();
     return;
   }
