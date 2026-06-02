@@ -3310,3 +3310,103 @@ body:not(.is-fullscreen):not(.is-mobile-game-fullscreen) .gold-hud {
     transform-origin: 0 50% !important;
   }
 }
+
+/* 20260602: mobile layout correction from screenshot - stage edge, smaller banner art, smaller bottom HUD */
+@media (pointer: coarse) and (orientation: landscape) {
+  /* Header: keep title readable, shrink/move background runner instead of pushing the logo up. */
+  body:not(.is-mobile-game-fullscreen) .shell {
+    --mobile-title-h: clamp(70px, 15dvh, 104px) !important;
+  }
+  body:not(.is-mobile-game-fullscreen) .topbar,
+  body:not(.is-mobile-game-fullscreen) .compact-topbar,
+  body:not(.is-mobile-game-fullscreen) .title-wrap {
+    height: var(--mobile-title-h) !important;
+    min-height: var(--mobile-title-h) !important;
+    overflow: hidden !important;
+  }
+  body:not(.is-mobile-game-fullscreen) .title-wrap::before {
+    bottom: calc(-1 * var(--mobile-title-h) * 0.06) !important;
+    height: calc(var(--mobile-title-h) * 1.72) !important;
+    background-size: 100% auto !important;
+  }
+  body:not(.is-mobile-game-fullscreen) .game-title-logo {
+    width: min(420px, 40vw) !important;
+    height: calc(var(--mobile-title-h) * 0.86) !important;
+    transform: translateY(calc(var(--mobile-title-h) * 0.04)) !important;
+    z-index: 3 !important;
+  }
+  body:not(.is-mobile-game-fullscreen) .title-runner {
+    width: min(118px, 11vw) !important;
+    height: min(95px, 8.9vw) !important;
+    top: calc(var(--mobile-title-h) * -0.04) !important;
+    --runner-y: 0px !important;
+  }
+
+  /* Right-top buttons attach to the game window edge, not phone screen edge. */
+  .fullscreen-button,
+  body.is-mobile-game-fullscreen .fullscreen-button {
+    position: absolute !important;
+    right: calc(100% * 8 / 1280) !important;
+    top: calc(100% * 8 / 720) !important;
+    width: calc(100% * 42 / 1280) !important;
+    height: calc(100% * 42 / 720) !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    max-width: 42px !important;
+    max-height: 42px !important;
+    z-index: 40 !important;
+  }
+  .restart-float.is-quick-restart,
+  body.is-mobile-game-fullscreen .restart-float.is-quick-restart {
+    position: absolute !important;
+    right: calc((100% * 8 / 1280) + min(44px, max(32px, 100% * 42 / 1280)) + 4px) !important;
+    top: calc(100% * 8 / 720) !important;
+    width: calc(100% * 42 / 1280) !important;
+    height: calc(100% * 42 / 720) !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    max-width: 42px !important;
+    max-height: 42px !important;
+    transform: none !important;
+    z-index: 39 !important;
+  }
+
+  /* Bottom mobile HUD: reduce all three groups so they can be tapped and don't crowd the map. */
+  .command-deck,
+  body.is-mobile-game-fullscreen .command-deck {
+    bottom: 5px !important;
+    transform: translateX(-50%) scale(calc(var(--stage-scale) * 0.82)) !important;
+    transform-origin: 50% 100% !important;
+  }
+  .gold-hud,
+  body.is-mobile-game-fullscreen .gold-hud {
+    left: 2px !important;
+    bottom: 5px !important;
+    transform: scale(calc(var(--stage-scale) * 0.66)) !important;
+    transform-origin: 0 100% !important;
+  }
+  .start-wave-float,
+  body.is-mobile-game-fullscreen .start-wave-float {
+    right: 4px !important;
+    bottom: 5px !important;
+    width: 249px !important;
+    height: 99px !important;
+    transform: scale(calc(var(--stage-scale) * 0.72)) !important;
+    transform-origin: 100% 100% !important;
+    pointer-events: auto !important;
+  }
+  .start-wave-float:hover:not(:disabled),
+  body.is-mobile-game-fullscreen .start-wave-float:hover:not(:disabled) {
+    transform: scale(calc(var(--stage-scale) * 0.75)) !important;
+  }
+  .start-wave-float:active:not(:disabled),
+  body.is-mobile-game-fullscreen .start-wave-float:active:not(:disabled) {
+    transform: scale(calc(var(--stage-scale) * 0.64)) !important;
+  }
+
+  /* Tighten touch hit area to the visible button size. */
+  .start-wave-float {
+    clip-path: inset(12% 18% 12% 18%) !important;
+    overflow: hidden !important;
+  }
+}
