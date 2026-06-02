@@ -14,13 +14,38 @@
 <body>
   <main class="shell">
     <div class="rotate-tip" aria-hidden="true">请横屏游玩</div>
-    <header class="topbar compact-topbar">
-      <div class="title-wrap">
-        <div id="titleRunner" class="title-runner" aria-hidden="true"></div>
-        <img class="game-title-logo" src="./assets/ui/title/game_title_logo.webp?v=20260529-portal-both-fixed-v26" alt="口袋防线" />
-        <button id="helpBtn" class="help-button" type="button" aria-label="玩法说明">?</button>
-      </div>
-    </header>
+    <div class="app-frame">
+      <header class="topbar compact-topbar">
+        <div class="title-wrap">
+          <div id="titleRunner" class="title-runner" aria-hidden="true"></div>
+          <img class="game-title-logo" src="./assets/ui/title/game_title_logo.webp?v=20260529-portal-both-fixed-v26" alt="口袋防线" />
+          <button id="helpBtn" class="help-button" type="button" aria-label="玩法说明">?</button>
+        </div>
+      </header>
+
+      <section class="game-card">
+        <div class="battlefield">
+          <button id="fullscreenBtn" class="fullscreen-button" type="button" aria-label="全屏">⛶</button>
+          <canvas id="game" width="1280" height="720"></canvas>
+          <div id="hud" class="hud"></div>
+          <div id="levelSelectPanel" class="level-select-panel is-hidden">
+            <span>关卡</span>
+            <select id="levelSelect" aria-label="选择关卡"></select>
+          </div>
+          <div id="shopCancelZone" class="shop-cancel-zone" aria-hidden="true">拖回商店取消放置</div>
+          <button id="startWaveBtn" class="primary start-wave-float game-art-button button-next-wave">开始下一波</button>
+          <button id="restartBtn" class="primary restart-float game-art-button button-restart" hidden>重玩关卡</button>
+
+          <section class="command-deck">
+            <section class="shop-strip" aria-label="建造道具栏">
+              <div id="shop" class="shop"></div>
+            </section>
+          </section>
+          <div id="goldHud" class="gold-hud" role="button" tabindex="0" aria-label="当前金币，快速点击三次显示或隐藏关卡选择"></div>
+          <div id="towerActionMenu" class="tower-action-menu" hidden></div>
+        </div>
+      </section>
+    </div>
 
     <dialog id="helpDialog" class="help-dialog">
       <form method="dialog" class="help-modal">
@@ -34,29 +59,6 @@
         </ul>
       </form>
     </dialog>
-
-    <section class="game-card">
-      <div class="battlefield">
-        <button id="fullscreenBtn" class="fullscreen-button" type="button" aria-label="全屏">⛶</button>
-        <canvas id="game" width="1280" height="720"></canvas>
-        <div id="hud" class="hud"></div>
-        <div id="levelSelectPanel" class="level-select-panel is-hidden">
-          <span>关卡</span>
-          <select id="levelSelect" aria-label="选择关卡"></select>
-        </div>
-        <div id="shopCancelZone" class="shop-cancel-zone" aria-hidden="true">拖回商店取消放置</div>
-        <button id="startWaveBtn" class="primary start-wave-float game-art-button button-next-wave">开始下一波</button>
-        <button id="restartBtn" class="primary restart-float game-art-button button-restart" hidden>重玩关卡</button>
-
-        <section class="command-deck">
-          <section class="shop-strip" aria-label="建造道具栏">
-            <div id="shop" class="shop"></div>
-          </section>
-        </section>
-        <div id="goldHud" class="gold-hud" role="button" tabindex="0" aria-label="当前金币，快速点击三次显示或隐藏关卡选择"></div>
-        <div id="towerActionMenu" class="tower-action-menu" hidden></div>
-      </div>
-    </section>
   </main>
 
   <script src="./game.js?v=20260529-fullscreen-v1"></script>
