@@ -1834,13 +1834,34 @@ function towerGemPoint(slot, tower) {
 
 function enemyHitPoint(enemy) {
   const def = enemiesCfg[enemy.type] || {};
-  const sprite = def.sprite;
+  const sprite = enemy.attacking && def.attackSprite ? def.attackSprite : def.sprite;
   if (sprite) {
     const height = sprite.height || 58;
     const footY = sprite.footY ?? 0.82;
     return { x: enemy.x, y: enemy.y - height * footY + height * 0.5 };
   }
   return { x: enemy.x, y: enemy.y };
+}
+
+function enemyFootHitPoint(enemy) {
+  const def = enemiesCfg[enemy.type] || {};
+  const sprite = enemy.attacking && def.attackSprite ? def.attackSprite : def.sprite;
+  if (sprite) {
+    const height = sprite.height || 58;
+    const footY = sprite.footY ?? 0.82;
+    const topY = enemy.y - height * footY;
+    const centerY = topY + height * 0.5;
+    return { x: enemy.x, y: centerY + (enemy.y - centerY) * 0.67 };
+  }
+  const radius = def.radius || 13;
+  return { x: enemy.x, y: enemy.y + radius * 0.55 };
+}
+
+function enemyEffectScale(enemy, base = 1) {
+  const def = enemiesCfg[enemy.type] || {};
+  const sprite = enemy.attacking && def.attackSprite ? def.attackSprite : def.sprite;
+  const size = sprite ? Math.max(sprite.width || 58, sprite.height || 58) : (def.radius || 13) * 2;
+  return base * Math.max(0.24, Math.min(1.15, size / 118));
 }
 
 function fireTower(tower, slot, target, stat, targets = [target]) {
@@ -1858,12 +1879,12 @@ function fireTower(tower, slot, target, stat, targets = [target]) {
       const shotCount = targets.length;
       targets.forEach((iceTarget, index) => {
         const spread = (index - (shotCount - 1) / 2) * 9;
-        const iceHit = enemyHitPoint(iceTarget);
+        const iceHit = enemyFootHitPoint(iceTarget);
         const aimAngle = Math.atan2(iceHit.y - origin.y, iceHit.x - origin.x);
         const ox = origin.x + Math.cos(aimAngle + Math.PI / 2) * spread;
         const oy = origin.y + Math.sin(aimAngle + Math.PI / 2) * spread;
         damageEnemy(iceTarget, stat.damage, tower.type, stat);
-        spawnHitEffect('snowBossTowerHit', iceHit.x, iceHit.y, { scale: 0.28, duration: 0.25, composite: 'screen' });
+        spawnHitEffect('snowBossTowerHit', iceHit.x, iceHit.y, { scale: enemyEffectScale(iceTarget, 0.42), duration: 0.25, composite: 'screen' });
         game.projectiles.push({ type: 'imageProjectile', imageKey: 'ice', x: ox, y: oy, tx: iceHit.x, ty: iceHit.y, age: 0, life: 0.16, maxWidth: iceAsset.maxWidth, maxHeight: iceAsset.maxHeight, color });
       });
     } else {
@@ -2518,15 +2539,26 @@ function drawEnemy(e) {
     } else if (isBoss) {
       ctx.filter = 'drop-shadow(0 4px 8px rgba(15, 23, 42, 0.35))';
     }
-    const spawnPurple = enemySpawnPurpleAmount(e);
-    if (spawnPurple > 0) {
+    const drawFrozenSprite = e.slowTimer > 0;
+    if (!drawFrozenSprite) {
+      const spawnPurple = enemySpawnPurpleAmount(e);
+      if (spawnPurple > 0) {
+        ctx.save();
+        ctx.globalAlpha *= 1 - spawnPurple;
+        ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+        ctx.restore();
+        drawTintedSprite(img, sx, sy, sw, sh, dx, dy, dw, dh, spawnPurple);
+      } else {
+        ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+      }
+    } else {
       ctx.save();
-      ctx.globalAlpha *= 1 - spawnPurple;
+      ctx.shadowColor = 'rgba(186, 230, 253, 0.95)';
+      ctx.shadowBlur = 7;
+      ctx.globalAlpha *= 0.42;
       ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
       ctx.restore();
-      drawTintedSprite(img, sx, sy, sw, sh, dx, dy, dw, dh, spawnPurple);
-    } else {
-      ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+      drawFrozenTintedSprite(img, sx, sy, sw, sh, dx, dy, dw, dh);
     }
     ctx.restore();
 
@@ -2628,6 +2660,30 @@ function drawTintedSprite(img, sx, sy, sw, sh, dx, dy, dw, dh, alpha) {
   ctx.globalAlpha *= alpha;
   ctx.drawImage(tintCanvas, dx, dy, dw, dh);
   ctx.restore();
+}
+
+function drawFrozenTintedSprite(img, sx, sy, sw, sh, dx, dy, dw, dh) {
+  const w = Math.max(1, Math.ceil(dw));
+  const h = Math.max(1, Math.ceil(dh));
+  if (tintCanvas.width !== w || tintCanvas.height !== h) {
+    tintCanvas.width = w;
+    tintCanvas.height = h;
+  }
+  tintCtx.clearRect(0, 0, w, h);
+  tintCtx.globalCompositeOperation = 'source-over';
+  tintCtx.globalAlpha = 1;
+  tintCtx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
+  tintCtx.globalCompositeOperation = 'source-atop';
+  tintCtx.globalAlpha = 0.62;
+  tintCtx.fillStyle = '#dff8ff';
+  tintCtx.fillRect(0, 0, w, h);
+  tintCtx.globalCompositeOperation = 'screen';
+  tintCtx.globalAlpha = 0.34;
+  tintCtx.fillStyle = '#93c5fd';
+  tintCtx.fillRect(0, 0, w, h);
+  tintCtx.globalCompositeOperation = 'source-over';
+  tintCtx.globalAlpha = 1;
+  ctx.drawImage(tintCanvas, dx, dy, dw, dh);
 }
 
 function enemySpawnPurpleAmount(enemy) {
