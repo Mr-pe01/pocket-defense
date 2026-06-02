@@ -72,7 +72,7 @@ body {
   z-index: 1;
   width: min(191px, calc((100vw - 20px) * 0.14921875));
   height: min(154px, calc((100vw - 20px) * 0.1203125));
-  transform: translate(var(--runner-x), var(--runner-y));
+  transform: translateX(calc(var(--runner-x) * 100% / 1280)) translateY(var(--runner-y));
   background-image: url("./assets/ui/title/title_runner_walk.png?v=20260529-portal-both-fixed-v26");
   background-size: 600% 600%;
   background-position: calc(var(--runner-frame-x) * 20%) calc(var(--runner-frame-y) * 20%);
@@ -1513,16 +1513,17 @@ body.is-mobile-game-fullscreen .app-frame {
   grid-template-rows: 1fr !important;
 }
 
-/* keep title contents inside the fixed 1280x156 banner instead of drifting below it */
+/* keep title contents in one 1280x156 logic banner, but keep feathered background visible */
 .title-wrap {
   overflow: visible !important;
+  transform: translateY(calc(-100% * 10 / 156));
 }
 .title-wrap::before {
-  bottom: calc(-100% * 20 / 156) !important;
+  bottom: calc(-100% * 8 / 156) !important;
 }
 .game-title-logo {
-  transform: translateY(calc(100% * 18 / 156)) !important;
+  transform: translateY(calc(100% * 8 / 156)) !important;
 }
 .title-runner {
-  --runner-y: calc(-100% * 18 / 156) !important;
+  --runner-y: calc(-100% * 30 / 156) !important;
 }
