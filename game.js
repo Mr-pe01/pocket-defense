@@ -3552,17 +3552,7 @@ function setTitleRunnerFrame(frameIndex) {
 
 function setTitleRunnerX(x) {
   if (!titleRunnerEl) return;
-  titleRunnerEl.style.setProperty('--runner-x', String(Number.isFinite(x) ? x : 0));
-}
-
-function titleRunnerPxToLogic(px) {
-  const wrapWidth = titleRunnerEl?.parentElement?.getBoundingClientRect?.().width || 1280;
-  return px * (1280 / wrapWidth);
-}
-
-function titleRunnerLogicToPx(logicX) {
-  const wrapWidth = titleRunnerEl?.parentElement?.getBoundingClientRect?.().width || 1280;
-  return logicX * (wrapWidth / 1280);
+  titleRunnerEl.style.setProperty('--runner-x', `${Number.isFinite(x) ? x : 0}px`);
 }
 
 function startTitleRunnerFrameLoop() {
@@ -3585,10 +3575,9 @@ function getTitleRunnerStopX() {
   if (!titleRunnerEl || !helpBtn) return 820;
   const wrapRect = titleRunnerEl.parentElement.getBoundingClientRect();
   const helpRect = helpBtn.getBoundingClientRect();
-  const runnerWidth = 191;
-  const helpCenterLogic = titleRunnerPxToLogic((helpRect.left + helpRect.width * 0.5) - wrapRect.left);
-  const x = helpCenterLogic - runnerWidth * 0.5 - 30;
-  return Math.max(120, Math.min(x, 980));
+  const runnerWidth = titleRunnerEl.getBoundingClientRect().width || 151;
+  const x = (helpRect.left + helpRect.width * 0.5) - wrapRect.left - runnerWidth * 0.5 - 30;
+  return Math.max(120, Math.min(x, Math.max(120, wrapRect.width - runnerWidth - 24)));
 }
 
 const TITLE_RUNNER_ACTION_DURATION = 2600;
@@ -3649,10 +3638,11 @@ async function runTitleRunnerLoopSequence() {
 async function runTitleRunnerOnce() {
   if (!titleRunnerEl || !titleRunnerEl.parentElement) return;
   if (titleRunnerMoveRaf) cancelAnimationFrame(titleRunnerMoveRaf);
-  const runnerWidth = 191;
-  const startX = -runnerWidth - 32;
-  const stopX = Math.max(startX + 20, Math.min(getTitleRunnerStopX(), 1280 - runnerWidth));
-  const endX = 1280 + runnerWidth + 32;
+  const wrapWidth = titleRunnerEl.parentElement.getBoundingClientRect().width || 1280;
+  const runnerWidth = titleRunnerEl.getBoundingClientRect().width || 151;
+  const startX = -runnerWidth - 24;
+  const stopX = Math.max(startX + 20, Math.min(getTitleRunnerStopX(), wrapWidth - runnerWidth - 12));
+  const endX = wrapWidth + runnerWidth + 24;
   const totalMoveDuration = 40000;
   const firstDistance = Math.max(1, stopX - startX);
   const secondDistance = Math.max(1, endX - stopX);
@@ -3680,8 +3670,8 @@ function setTitleRunnerAtHelp() {
   if (!titleRunnerEl || !helpBtn) return;
   const wrapRect = titleRunnerEl.parentElement.getBoundingClientRect();
   const helpRect = helpBtn.getBoundingClientRect();
-  const helpCenterLogic = titleRunnerPxToLogic((helpRect.left + helpRect.width * 0.5) - wrapRect.left);
-  const x = helpCenterLogic - 191 * 0.5 - 30;
+  const runnerWidth = titleRunnerEl.getBoundingClientRect().width || 151;
+  const x = (helpRect.left + helpRect.width * 0.5) - wrapRect.left - runnerWidth * 0.5 - 30;
   setTitleRunnerX(x);
 }
 
