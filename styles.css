@@ -63,7 +63,7 @@ body {
 
 .title-runner {
   --runner-x: 0px;
-  --runner-y: calc(min(18px, calc((100vw - 20px) * 0.0140625)) - min(14px, calc((100vw - 20px) * 0.0109375)));
+  --runner-y: calc(min(18px, calc((100vw - 20px) * 0.0140625)) - min(22px, calc((100vw - 20px) * 0.0171875)));
   --runner-frame-x: 0;
   --runner-frame-y: 0;
   position: absolute;
@@ -125,7 +125,7 @@ h1 {
 .help-button {
   position: absolute;
   left: calc(50% + min(200px, calc((100vw - 20px) * 0.15625)));
-  top: min(46px, calc((100vw - 20px) * 0.0359375));
+  top: min(34px, calc((100vw - 20px) * 0.0265625));
   right: auto;
   bottom: auto;
   width: min(45px, calc((100vw - 20px) * 0.03515625));
@@ -918,11 +918,11 @@ body.dragging canvas {
 .restart-float {
   position: absolute;
   right: 50%;
-  top: calc(50% + 60px);
+  top: calc(50% + 74px);
   transform: translateX(50%);
   transform-origin: 50% 50%;
-  width: 312px;
-  height: 120px;
+  width: 276px;
+  height: 106px;
   min-height: 0;
   padding: 0;
   font-size: 0;
@@ -1530,7 +1530,7 @@ body.is-mobile-game-fullscreen .app-frame {
   transform: translateY(calc(100% * 8 / 156)) !important;
 }
 .title-runner {
-  --runner-y: calc(-100% * 22 / 156) !important;
+  --runner-y: calc(-100% * 28 / 156) !important;
 }
 
 @media (pointer: coarse) and (orientation: landscape) {
@@ -1541,7 +1541,7 @@ body.is-mobile-game-fullscreen .app-frame {
     bottom: calc(-100% * 8 / 156) !important;
   }
   .title-runner {
-    --runner-y: calc(-100% * 16 / 156) !important;
+    --runner-y: calc(-100% * 22 / 156) !important;
   }
   .battlefield {
     --ui-bottom: 2px;

@@ -17,9 +17,9 @@
         ]
       },
       "levels": [
-        { "damage": 18, "range": 138, "cooldown": 1.25, "splash": 85 },
-        { "damage": 35, "range": 156, "cooldown": 1.12, "splash": 107 },
-        { "damage": 64, "range": 180, "cooldown": 1.0, "splash": 130 }
+        { "damage": 18, "range": 138, "cooldown": 1.25, "splash": 104 },
+        { "damage": 35, "range": 156, "cooldown": 1.12, "splash": 131 },
+        { "damage": 64, "range": 180, "cooldown": 1.0, "splash": 160 }
       ]
     },
     "ice": {

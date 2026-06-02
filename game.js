@@ -1884,7 +1884,7 @@ function fireTower(tower, slot, target, stat, targets = [target]) {
         const ox = origin.x + Math.cos(aimAngle + Math.PI / 2) * spread;
         const oy = origin.y + Math.sin(aimAngle + Math.PI / 2) * spread;
         damageEnemy(iceTarget, stat.damage, tower.type, stat);
-        spawnHitEffect('snowBossTowerHit', iceHit.x, iceHit.y, { scale: enemyEffectScale(iceTarget, 0.42), duration: 0.25, composite: 'screen' });
+        spawnHitEffect('snowBossTowerHit', iceHit.x, iceHit.y, { scale: enemyEffectScale(iceTarget, 0.48), duration: 0.25, composite: 'screen', alpha: 1 });
         game.projectiles.push({ type: 'imageProjectile', imageKey: 'ice', x: ox, y: oy, tx: iceHit.x, ty: iceHit.y, age: 0, life: 0.16, maxWidth: iceAsset.maxWidth, maxHeight: iceAsset.maxHeight, color });
       });
     } else {
@@ -1902,7 +1902,7 @@ function fireTower(tower, slot, target, stat, targets = [target]) {
 function spawnHitEffect(effect, x, y, options = {}) {
   const def = SPRITE_SHEET_EFFECTS[effect];
   if (!def) return;
-  game.projectiles.push({ type: 'spriteEffect', effect, x, y, age: 0, duration: options.duration ?? def.duration, scale: options.scale ?? 1, composite: options.composite });
+  game.projectiles.push({ type: 'spriteEffect', effect, x, y, age: 0, duration: options.duration ?? def.duration, scale: options.scale ?? 1, composite: options.composite, alpha: options.alpha ?? 1 });
 }
 
 function updateProjectiles(dt) {
@@ -2535,7 +2535,7 @@ function drawEnemy(e) {
     ctx.save();
     applyEnemySpawnAppearance(e);
     if (e.slowTimer > 0) {
-      ctx.filter = 'brightness(1.48) saturate(0.42) contrast(1.04) drop-shadow(0 0 7px rgba(186, 230, 253, 0.95))';
+      ctx.filter = 'none';
     } else if (isBoss) {
       ctx.filter = 'drop-shadow(0 4px 8px rgba(15, 23, 42, 0.35))';
     }
@@ -2552,13 +2552,7 @@ function drawEnemy(e) {
         ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
       }
     } else {
-      ctx.save();
-      ctx.shadowColor = 'rgba(186, 230, 253, 0.95)';
-      ctx.shadowBlur = 7;
-      ctx.globalAlpha *= 0.42;
-      ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
-      ctx.restore();
-      drawFrozenTintedSprite(img, sx, sy, sw, sh, dx, dy, dw, dh);
+      drawFrozenTintedSprite(img, sx, sy, sw, sh, dx, dy, dw, dh, 0.34);
     }
     ctx.restore();
 
@@ -2662,7 +2656,7 @@ function drawTintedSprite(img, sx, sy, sw, sh, dx, dy, dw, dh, alpha) {
   ctx.restore();
 }
 
-function drawFrozenTintedSprite(img, sx, sy, sw, sh, dx, dy, dw, dh) {
+function drawFrozenTintedSprite(img, sx, sy, sw, sh, dx, dy, dw, dh, tintAlpha = 0.34) {
   const w = Math.max(1, Math.ceil(dw));
   const h = Math.max(1, Math.ceil(dh));
   if (tintCanvas.width !== w || tintCanvas.height !== h) {
@@ -2673,16 +2667,24 @@ function drawFrozenTintedSprite(img, sx, sy, sw, sh, dx, dy, dw, dh) {
   tintCtx.globalCompositeOperation = 'source-over';
   tintCtx.globalAlpha = 1;
   tintCtx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
-  tintCtx.globalCompositeOperation = 'source-atop';
-  tintCtx.globalAlpha = 0.62;
-  tintCtx.fillStyle = '#dff8ff';
-  tintCtx.fillRect(0, 0, w, h);
-  tintCtx.globalCompositeOperation = 'screen';
-  tintCtx.globalAlpha = 0.34;
-  tintCtx.fillStyle = '#93c5fd';
-  tintCtx.fillRect(0, 0, w, h);
-  tintCtx.globalCompositeOperation = 'source-over';
-  tintCtx.globalAlpha = 1;
+
+  // 冰冻调色：逐像素把原 sprite 往冷白冰蓝偏移，保留原 alpha，避免蒙层白边/半透明重影。
+  const imageData = tintCtx.getImageData(0, 0, w, h);
+  const data = imageData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const alpha = data[i + 3];
+    if (alpha < 4) continue;
+    const edgeGuard = Math.min(1, alpha / 180);
+    const amount = tintAlpha * edgeGuard;
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    data[i] = Math.round(r + (218 - r) * amount + 8 * edgeGuard);
+    data[i + 1] = Math.round(g + (246 - g) * amount + 10 * edgeGuard);
+    data[i + 2] = Math.round(b + (255 - b) * amount + 14 * edgeGuard);
+    data[i + 3] = alpha;
+  }
+  tintCtx.putImageData(imageData, 0, 0);
   ctx.drawImage(tintCanvas, dx, dy, dw, dh);
 }
 
@@ -2806,7 +2808,7 @@ function drawSpriteEffect(p) {
   const dh = (p.height || def.height || sh) * scale;
   ctx.save();
   ctx.globalCompositeOperation = p.composite || def.composite || 'source-over';
-  ctx.globalAlpha = 1;
+  ctx.globalAlpha = p.alpha ?? 1;
   ctx.drawImage(img, sx, sy, sw, sh, drawX - dw / 2, drawY - dh / 2, dw, dh);
   ctx.restore();
 }
