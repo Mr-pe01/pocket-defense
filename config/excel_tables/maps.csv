@@ -1,3 +1,0 @@
-﻿mapId,name,background,roadMask,width,height,canvasWidth,canvasHeight,enemyPathPoints
-level_01,梦幻森林入口,./assets/maps/level_01_map.webp,./assets/maps/level_01_road_path_mask.webp,2752,1536,1280,720,72
-level_02,月夜冰原,./assets/maps/level_02_map.webp,./assets/maps/level_02_road_path_mask.webp,2752,1536,1280,720,72
