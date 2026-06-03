@@ -93,7 +93,7 @@ const CONFIG_FILES = [
   './config/maps.json'
 ];
 
-const ASSET_VERSION = '20260529-fullscreen-v1';
+const ASSET_VERSION = '20260602-tower-top-anchor-v2';
 
 const EFFECT_SEQUENCES = {
   lightBeam: {
@@ -117,12 +117,13 @@ const GEM_IDLE_EFFECTS = {
 };
 
 const PROJECTILE_ASSETS = {
-  ice: { image: './assets/effects/ice_projectile.png', maxWidth: 34, maxHeight: 14, speed: 520 }
+  ice: { image: './assets/effects/hit/ice_projectile.png', maxWidth: 34, maxHeight: 14, speed: 520 }
 };
 
 const SPRITE_SHEET_EFFECTS = {
   lightHit: { image: './assets/effects/hit/light_hit_sheet.png', frameCols: 3, frameRows: 3, frames: 9, duration: 0.36, width: 88, height: 88, composite: 'screen' },
   thunderHit: { image: './assets/effects/hit/thunder_hit_sheet.png', frameCols: 3, frameRows: 3, frames: 9, duration: 0.38, width: 96, height: 96, composite: 'screen' },
+  thunderSplash: { image: './assets/effects/hit/thunder_splash_sheet.png', frameCols: 3, frameRows: 3, frames: 9, duration: 0.36, width: 236, height: 142, composite: 'screen' },
   snowBossTowerHit: { image: './assets/effects/hit/snow_boss_tower_hit_sheet.png', frameCols: 4, frameRows: 4, frames: 16, duration: 0.72, width: 203, height: 203, composite: 'screen' },
   towerUpgrade: { image: './assets/effects/upgrade/tower_upgrade_sheet.png', frameCols: 4, frameRows: 2, frames: 8, duration: 0.82, width: 95, height: 158, composite: 'screen' },
   monsterExitPortal: { image: './assets/effects/portal/monster_exit_portal_sheet.png', frameCols: 4, frameRows: 4, frames: 16, duration: 2.625, width: 138, height: 245, composite: 'screen', loop: true }
@@ -1804,14 +1805,27 @@ function towerSpriteInfo(tower) {
   const def = towersCfg[tower.type];
   const sprite = def.sprite || {};
   const levelSprite = sprite.levels?.[tower.level - 1] || sprite;
-  const overrideSprite = towerSpriteOverride(tower.type, tower.level) || {}; 
+  const overrideSprite = towerSpriteOverride(tower.type, tower.level) || {};
+  const imageKey = towerImageKey(tower.type, tower.level);
+  const img = towerImages[imageKey];
+  const configuredWidth = overrideSprite.width || levelSprite.width || sprite.width || 92;
+  const configuredHeight = overrideSprite.height || levelSprite.height || sprite.height || 92;
+  let width = configuredWidth;
+  let height = configuredHeight;
+  if (img?.width && img?.height) {
+    const imageAspect = img.width / img.height;
+    if (imageAspect > 0) {
+      width = configuredHeight * imageAspect;
+      height = configuredHeight;
+    }
+  }
   return {
     image: overrideSprite.image || levelSprite.image,
-    width: overrideSprite.width || levelSprite.width || sprite.width || 92,
-    height: overrideSprite.height || levelSprite.height || sprite.height || 92,
+    width,
+    height,
     footY: overrideSprite.footY ?? levelSprite.footY ?? sprite.footY ?? 0.82,
     gemX: overrideSprite.gemX ?? levelSprite.gemX ?? sprite.gemX ?? 0.5,
-    gemY: overrideSprite.gemY ?? levelSprite.gemY ?? sprite.gemY ?? 0.24
+    gemY: overrideSprite.gemY ?? levelSprite.gemY ?? sprite.gemY ?? 0
   };
 }
 
@@ -1826,10 +1840,9 @@ function towerSpriteRect(slot, tower) {
 
 function towerGemPoint(slot, tower) {
   const rect = towerSpriteRect(slot, tower);
-  return {
-    x: rect.x + rect.width * rect.sprite.gemX,
-    y: rect.y + rect.height * rect.sprite.gemY
-  };
+  const x = rect.x + rect.width * rect.sprite.gemX;
+  const y = rect.y + rect.height * rect.sprite.gemY;
+  return { x, y };
 }
 
 function enemyHitPoint(enemy) {
@@ -1927,11 +1940,6 @@ function updateProjectiles(dt) {
       if (p.age >= p.duration) p.dead = true;
       continue;
     }
-    if (p.type === 'shockwave') {
-      p.age += dt;
-      if (p.age >= p.life) p.dead = true;
-      continue;
-    }
     const dx = p.tx - p.x;
     const dy = p.ty - p.y;
     const dist = Math.hypot(dx, dy);
@@ -1954,7 +1962,7 @@ function explode(p) {
       hitCount += 1;
     }
   }
-  game.projectiles.push({ type: 'shockwave', x: p.tx, y: p.ty, age: 0, life: 0.28, radius: p.splash, color: '#c4b5fd' });
+  spawnHitEffect('thunderSplash', p.tx, p.ty, { scale: Math.max(0.72, p.splash / 118), duration: 0.36, composite: 'screen', alpha: 0.95 });
   floatText(p.tx, p.ty, hitCount ? `雷爆×${hitCount}` : '雷爆', '#ddd6fe');
 }
 
@@ -2284,7 +2292,7 @@ function drawGemIdleEffect(item, rect, alpha = 1) {
   const sh = img.height / rows;
   const size = (effect.size || 42) * (item.level === 1 ? 0.6 : item.level === 3 ? 1.3 : 1);
   const cx = rect.x + rect.width * rect.sprite.gemX;
-  const cy = rect.y + rect.height * rect.sprite.gemY + (effect.offsetY || 0);
+  const cy = rect.y + rect.height * rect.sprite.gemY;
 
   ctx.save();
   ctx.globalAlpha = Math.min(1, alpha * 0.92);
@@ -2821,8 +2829,6 @@ function drawProjectiles() {
       drawSpriteEffect(p);
     } else if (p.type === 'imageProjectile') {
       drawImageProjectile(p);
-    } else if (p.type === 'shockwave') {
-      drawShockwave(p);
     } else if (p.type === 'beam') {
       ctx.globalAlpha = Math.max(0, p.life / 0.12);
       ctx.strokeStyle = p.color;
@@ -2839,20 +2845,6 @@ function drawProjectiles() {
       ctx.fill();
     }
   }
-}
-
-function drawShockwave(p) {
-  const t = Math.min(1, p.age / p.life);
-  ctx.save();
-  ctx.globalAlpha = 1 - t;
-  ctx.strokeStyle = p.color || '#c4b5fd';
-  ctx.lineWidth = 3;
-  ctx.setLineDash([8, 8]);
-  ctx.beginPath();
-  ctx.arc(p.x, p.y, Math.max(8, p.radius * (0.35 + t * 0.65)), 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.restore();
 }
 
 function drawTopBars() {
