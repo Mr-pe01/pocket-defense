@@ -1,0 +1,7 @@
+﻿key,value
+enabled,True
+afterWave,8
+type,boss_forest_guardian
+reward,40
+warningText,BOSS 来袭：森林守卫出现！
+skills,"{""haste"": {""name"": ""极速"", ""speedMultiplier"": 2, ""duration"": 6, ""cooldown"": 8, ""triggerDelay"": 1.2}}"
