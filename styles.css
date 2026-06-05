@@ -1376,11 +1376,9 @@ body.is-mobile-game-fullscreen .fullscreen-button {
 
 .start-wave-float {
   position: absolute;
-  /* 20260605: 左金币按钮与右开战按钮统一按底部 UI 中轴线对齐。
-     金币实际视觉高度约 137*0.86=117.8，开战按钮约 99*0.98=97，
-     所以开战按钮底部比金币高约 10px，中心线一致。 */
+  /* 20260605: 右侧开战按钮按底部整体 UI 背板圆形槽位对齐。 */
   right: var(--ui-edge) !important;
-  bottom: calc(var(--ui-bottom) + 10px) !important;
+  bottom: calc(var(--ui-bottom) + 14px) !important;
   width: calc(249px * var(--stage-scale) * 0.98) !important;
   height: calc(99px * var(--stage-scale) * 0.98) !important;
   min-width: 0;
