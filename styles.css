@@ -2237,3 +2237,65 @@ body.ui-anchor-debug .bottom-unified-ui .start-wave-float {
   50% { transform: scale(1.1) rotate(2deg); }
   100% { transform: scale(0.9) rotate(-2deg); }
 }
+
+
+/* 20260605: 底部 UI 以 bottom-unified-ui 为父节点的实测相对坐标
+   来源：正确链接 v=20260603-open2 的实际 DOM 矩形。
+   goldRel: center=(9.8434%, 50.2743%), size=(7.9564%, 51.8692%)
+   startRel: center=(90.4020%, 51.3358%), size=(8.4290%, 54.9502%)
+   规则：B(bottom-unified-ui) 是父画布，C(金币/开战) 只相对 B 定位。 */
+.bottom-unified-ui {
+  --gold-center-x-p: 9.8434%;
+  --gold-center-y-p: 50.2743%;
+  --gold-width-p: 7.9564%;
+  --gold-height-p: 51.8692%;
+  --start-center-x-p: 90.4020%;
+  --start-center-y-p: 51.3358%;
+  --start-width-p: 8.4290%;
+  --start-height-p: 54.9502%;
+}
+
+.bottom-unified-ui .gold-hud {
+  left: var(--gold-center-x-p) !important;
+  top: var(--gold-center-y-p) !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: var(--gold-width-p) !important;
+  min-width: 0 !important;
+  height: var(--gold-height-p) !important;
+  padding: 0 !important;
+  transform: translate(-50%, -50%) !important;
+  transform-origin: 50% 50% !important;
+}
+
+.bottom-unified-ui .gold-hud .coin-icon {
+  width: 100% !important;
+  height: 100% !important;
+  flex-basis: 100% !important;
+}
+
+.bottom-unified-ui .start-wave-float {
+  left: var(--start-center-x-p) !important;
+  top: var(--start-center-y-p) !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: var(--start-width-p) !important;
+  height: var(--start-height-p) !important;
+  transform: translate(-50%, -50%) scale(0.988) !important;
+  transform-origin: 50% 50% !important;
+}
+
+.bottom-unified-ui .start-wave-float:hover:not(:disabled) {
+  transform: translate(-50%, -50%) scale(1.035) !important;
+}
+
+.bottom-unified-ui .start-wave-float:active:not(:disabled) {
+  transform: translate(-50%, -50%) scale(0.92) !important;
+}
+
+body.is-fullscreen .bottom-unified-ui .start-wave-float {
+  left: var(--start-center-x-p) !important;
+  top: var(--start-center-y-p) !important;
+  right: auto !important;
+  bottom: auto !important;
+}
