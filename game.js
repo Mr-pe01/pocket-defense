@@ -262,6 +262,8 @@ const CONFIG_FILES = [
 const ASSET_VERSION = '20260602-tower-top-anchor-v2';
 
 function loadUiAnchorDebugTuneFromStorage(defaultTune) {
+  // GitHub 发布包不读取本机 demo 调试缓存，避免网页端被旧 localStorage 锚点污染。
+  return defaultTune;
   try {
     const raw = localStorage.getItem('pocketDefense.uiAnchorDebugTune');
     if (!raw) return defaultTune;
@@ -410,7 +412,8 @@ const level02PortalDebugTune = { x: 20, y: 14, scale: 1.06, scaleX: 0.84, scaleY
 const uiAnchorDebugTune = loadUiAnchorDebugTuneFromStorage({
   active: 'gold',
   gold: { cx: 78, cy: 94, icon: 106 },
-  start: { cx: 98, cy: 90, size: 138 }
+  // GitHub 网页端专用：开战按钮按底部背板右侧圆形槽位重调，避免沿用 demo 本地缓存。
+  start: { cx: 104, cy: 95, size: 122 }
 });
 applyUiAnchorDebugStyles();
 
