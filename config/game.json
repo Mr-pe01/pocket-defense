@@ -6,10 +6,11 @@
   },
   "game": {
     "baseHp": 20,
-    "startGold": 58,
+    "startGold": 68,
     "maxWave": 8,
-    "prepReward": 14,
-    "killGold": 2,
+    "prepReward": 10,
+    "killGold": 0,
+    "levelAssetCarryRate": 0.1,
     "boardWidth": 1280,
     "boardHeight": 720,
     "inventory": {

@@ -26,23 +26,36 @@
       <section class="game-card">
         <div class="battlefield">
           <button id="fullscreenBtn" class="fullscreen-button" type="button" aria-label="全屏">⛶</button>
+          <button id="battleSpeedBtn" class="battle-speed-button" type="button" aria-label="战斗倍速">X1</button>
           <canvas id="game" width="1280" height="720"></canvas>
           <div id="hud" class="hud"></div>
           <div id="levelSelectPanel" class="level-select-panel is-hidden">
-            <span>关卡</span>
-            <select id="levelSelect" aria-label="选择关卡"></select>
+            <div class="level-select-row">
+              <span>关卡</span>
+              <select id="levelSelect" aria-label="选择关卡"></select>
+            </div>
+            <button id="speedTestBtn" class="speed-test-button" type="button" aria-label="X6测试开关">X6 测试：关</button>
           </div>
           <div id="shopCancelZone" class="shop-cancel-zone" aria-hidden="true">拖回商店取消放置</div>
-          <button id="startWaveBtn" class="primary start-wave-float game-art-button button-next-wave">开始下一波</button>
-          <button id="restartBtn" class="primary restart-float game-art-button button-restart" hidden>重玩关卡</button>
-
-          <section class="command-deck">
-            <section class="shop-strip" aria-label="建造道具栏">
-              <div id="shop" class="shop"></div>
+          <section class="bottom-unified-ui" aria-label="底部操作区">
+            <div id="goldHud" class="gold-hud" role="button" tabindex="0" aria-label="当前金币，快速点击三次显示或隐藏关卡选择"></div>
+            <section class="command-deck">
+              <section class="shop-strip" aria-label="建造道具栏">
+                <div id="shop" class="shop"></div>
+              </section>
             </section>
+            <button id="startWaveBtn" class="primary start-wave-float game-art-button button-next-wave">开始下一波</button>
           </section>
-          <div id="goldHud" class="gold-hud" role="button" tabindex="0" aria-label="当前金币，快速点击三次显示或隐藏关卡选择"></div>
+          <div id="shopInfoPanel" class="shop-info-panel" hidden></div>
+          <button id="restartBtn" class="primary restart-float game-art-button button-restart" hidden>重玩关卡</button>
           <div id="towerActionMenu" class="tower-action-menu" hidden></div>
+          <div id="waveSettlePanel" class="wave-settle-panel" hidden>
+            <div class="wave-settle-card">
+              <div class="wave-settle-title">波次结算</div>
+              <div id="waveSettleContent" class="wave-settle-content"></div>
+              <button id="waveSettleCloseBtn" class="wave-settle-close" type="button">确认</button>
+            </div>
+          </div>
         </div>
       </section>
     </div>

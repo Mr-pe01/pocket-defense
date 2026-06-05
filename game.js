@@ -22,9 +22,15 @@ const sellBtn = document.getElementById('sellBtn');
 const levelSelectEl = document.getElementById('levelSelect');
 const levelSelectPanelEl = document.getElementById('levelSelectPanel');
 const goldHudEl = document.getElementById('goldHud');
+const shopInfoPanelEl = document.getElementById('shopInfoPanel');
 const towerActionMenuEl = document.getElementById('towerActionMenu');
 const titleRunnerEl = document.getElementById('titleRunner');
 const fullscreenBtn = document.getElementById('fullscreenBtn');
+const battleSpeedBtn = document.getElementById('battleSpeedBtn');
+const speedTestBtn = document.getElementById('speedTestBtn');
+const waveSettlePanelEl = document.getElementById('waveSettlePanel');
+const waveSettleContentEl = document.getElementById('waveSettleContent');
+const waveSettleCloseBtn = document.getElementById('waveSettleCloseBtn');
 
 let titleRunnerTimer = null;
 let titleRunnerMoveRaf = null;
@@ -65,6 +71,7 @@ let dragTooltipEl = null;
 let inventoryDragPreviewIndex = null;
 let lastInventoryDragTarget = null;
 let dragGhostEl = null;
+let shopBuildGhostEl = null;
 let commandDeckCollapsed = false;
 let pendingBuild = null;
 let shopDragging = null;
@@ -72,6 +79,165 @@ let shopCancelZoneActive = false;
 let suppressNextCanvasClick = false;
 let goldHudClickCount = 0;
 let goldHudFirstClickTime = 0;
+let battleSpeed = 1;
+let speedBeforeTest = 1;
+let speedTestUnlocked = false;
+let speedTestActive = false;
+let activeShopInfoType = null;
+let latestSettleNetGold = 0;
+const SETTLEMENT_COIN_SHEET = './assets/effects/settlement_coin_fly_sheet.png';
+const NORMAL_BATTLE_SPEEDS = [1, 2];
+const MAX_LOGIC_STEP = 1 / 60;
+
+function setBattleSpeed(speed) {
+  battleSpeed = NORMAL_BATTLE_SPEEDS.includes(speed) ? speed : 1;
+  speedBeforeTest = battleSpeed;
+  speedTestActive = false;
+  updateBattleSpeedUi();
+}
+
+function updateBattleSpeedUi() {
+  if (battleSpeedBtn) {
+    const shownSpeed = speedTestActive ? 6 : battleSpeed;
+    battleSpeedBtn.textContent = '';
+    battleSpeedBtn.dataset.speed = String(shownSpeed);
+    battleSpeedBtn.setAttribute('aria-label', shownSpeed === 2 ? '战斗倍速 X2' : (shownSpeed === 6 ? '战斗倍速 X6 测试' : '战斗倍速 X1'));
+    battleSpeedBtn.classList.toggle('is-x2', shownSpeed === 2);
+    battleSpeedBtn.classList.toggle('is-test-speed', !!speedTestActive);
+  }
+  if (speedTestBtn) {
+    speedTestBtn.textContent = `X6 测试：${speedTestActive ? '开' : '关'}`;
+    speedTestBtn.classList.toggle('is-active', !!speedTestActive);
+    speedTestBtn.disabled = !speedTestUnlocked;
+    speedTestBtn.title = speedTestUnlocked ? 'X6测试倍速开关' : '快速点击金币3次后解锁';
+  }
+}
+
+function toggleBattleSpeed() {
+  const index = NORMAL_BATTLE_SPEEDS.indexOf(battleSpeed);
+  setBattleSpeed(NORMAL_BATTLE_SPEEDS[(index + 1 + NORMAL_BATTLE_SPEEDS.length) % NORMAL_BATTLE_SPEEDS.length]);
+}
+
+function toggleSpeedTest() {
+  if (!speedTestUnlocked) return setMessage('快速点击金币 3 次后解锁 X6 测试功能。');
+  if (!speedTestActive) {
+    speedBeforeTest = NORMAL_BATTLE_SPEEDS.includes(battleSpeed) ? battleSpeed : 1;
+    speedTestActive = true;
+  } else {
+    speedTestActive = false;
+    battleSpeed = NORMAL_BATTLE_SPEEDS.includes(speedBeforeTest) ? speedBeforeTest : 1;
+  }
+  updateBattleSpeedUi();
+  setMessage(speedTestActive ? 'X6 测试倍速已开启。' : `X6 测试倍速已关闭，已恢复 X${battleSpeed}。`);
+}
+
+function showWaveSettlePanel(waveNumber, stats, bossReady = false) {
+  if (!waveSettlePanelEl || !waveSettleContentEl) return;
+  const net = stats.killGold + stats.mineGold + stats.rewardGold - stats.leakPenalty;
+  latestSettleNetGold = Math.max(0, net);
+  waveSettleContentEl.innerHTML = `
+    <div class="settle-row"><span>第 ${waveNumber} 波</span><strong>完成</strong></div>
+    <div class="settle-row"><span>击杀获得</span><strong>+${stats.killGold}</strong></div>
+    <div class="settle-row"><span>金矿产出</span><strong>+${stats.mineGold}</strong></div>
+    <div class="settle-row"><span>通关奖励</span><strong>+${stats.rewardGold}</strong></div>
+    <div class="settle-row"><span>漏怪扣除</span><strong>-${stats.leakPenalty}</strong></div>
+    <div class="settle-row total"><span>本波净收益</span><strong>${net >= 0 ? '+' : ''}${net}</strong></div>
+    <p class="settle-tip">${bossReady ? '可以先调整建筑布置，确认后挑战 BOSS。' : '可以重新调整建筑布置，确认后开始下一波。'}</p>
+  `;
+  waveSettlePanelEl.hidden = false;
+}
+
+function hideWaveSettlePanel() {
+  const shouldFlyCoins = !!(waveSettlePanelEl && !waveSettlePanelEl.hidden && latestSettleNetGold > 0);
+  const settleCardRect = waveSettlePanelEl?.querySelector('.wave-settle-card')?.getBoundingClientRect();
+  const settlePanelRect = waveSettlePanelEl?.getBoundingClientRect();
+  const sourceRect = settleCardRect && settleCardRect.width > 0 && settleCardRect.height > 0 ? settleCardRect : settlePanelRect;
+  const source = sourceRect && sourceRect.width > 0 && sourceRect.height > 0
+    ? { x: sourceRect.left + sourceRect.width / 2, y: sourceRect.top + sourceRect.height / 2 - Math.max(32, sourceRect.height * 0.16) }
+    : { x: window.innerWidth / 2, y: window.innerHeight * 0.42 };
+  if (waveSettlePanelEl) waveSettlePanelEl.hidden = true;
+  if (shouldFlyCoins) playSettlementCoinFly(latestSettleNetGold, source);
+  latestSettleNetGold = 0;
+}
+
+function playSettlementCoinFly(amount, sourceOverride = null) {
+  if (!goldHudEl || amount <= 0) return;
+  const targetRect = goldHudEl.getBoundingClientRect();
+  const center = sourceOverride || { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+  const target = { x: targetRect.left + targetRect.width / 2, y: targetRect.top + targetRect.height / 2 };
+  const count = 10 + Math.floor(Math.random() * 6);
+  const arrivals = [];
+  window.clearTimeout(goldHudEl._coinShakeDelayTimer);
+  window.clearTimeout(goldHudEl._coinShakeTimer);
+  goldHudEl.classList.remove('coin-collect-shake');
+  for (let i = 0; i < count; i += 1) {
+    const startDelay = i === 0 ? 0 : Math.random() * 1000;
+    const radius = (18 + Math.random() * 54) * (battlefieldEl ? Math.max(0.55, Number.parseFloat(getComputedStyle(battlefieldEl).getPropertyValue('--stage-scale')) || 1) : 1);
+    const angle = Math.random() * Math.PI * 2;
+    const start = {
+      x: center.x + Math.cos(angle) * radius,
+      y: center.y + Math.sin(angle) * radius
+    };
+    const duration = 980 + Math.random() * 430;
+    arrivals.push(startDelay + duration);
+    window.setTimeout(() => spawnSettlementCoinFlyToTarget(start, target, i, duration), startDelay);
+  }
+  const firstArrival = Math.max(0, Math.min(...arrivals));
+  const lastArrival = Math.max(...arrivals);
+  goldHudEl._coinShakeDelayTimer = window.setTimeout(() => {
+    goldHudEl.classList.add('coin-collect-shake');
+    goldHudEl._coinShakeTimer = window.setTimeout(() => goldHudEl.classList.remove('coin-collect-shake'), Math.max(180, lastArrival - firstArrival + 220));
+  }, firstArrival);
+}
+
+function spawnSettlementCoinFlyToTarget(start, target, index = 0, forcedDuration = null) {
+  const coin = document.createElement('div');
+  coin.className = 'settlement-coin-fly settlement-coin-debug-preview';
+  coin.style.backgroundImage = `url("${SETTLEMENT_COIN_SHEET}")`;
+  coin.style.animationDuration = `${0.56 + Math.random() * 0.48}s`;
+  document.body.appendChild(coin);
+  const scale = battlefieldEl ? Math.max(0.55, Number.parseFloat(getComputedStyle(battlefieldEl).getPropertyValue('--stage-scale')) || 1) : 1;
+  const size = Math.max(26, 48 * scale * (0.8 + Math.random() * 0.4));
+  coin.style.width = `${size}px`;
+  coin.style.height = `${size}px`;
+  const control = {
+    x: start.x + (target.x - start.x) * (0.28 + Math.random() * 0.22) + (Math.random() - 0.15) * 180 * scale,
+    y: Math.min(start.y, target.y) - (95 + Math.random() * 135) * scale
+  };
+  const duration = forcedDuration ?? (980 + Math.random() * 430);
+  const born = performance.now();
+  function fastSlowFast(t) {
+    // 平滑的 快 -> 慢 -> 快：避免速度拐点卡顿
+    const linear = t;
+    const slowBias = 0.18 * Math.sin(Math.PI * t);
+    return Math.max(0, Math.min(1, linear - slowBias));
+  }
+  function tick(now) {
+    const tRaw = Math.max(0, Math.min(1, (now - born) / duration));
+    const t = fastSlowFast(tRaw);
+    const m = 1 - t;
+    const x = m * m * start.x + 2 * m * t * control.x + t * t * target.x;
+    const y = m * m * start.y + 2 * m * t * control.y + t * t * target.y;
+    const flyScale = 1 - 0.12 * tRaw;
+    coin.style.transform = `translate3d(${x - size / 2}px, ${y - size / 2}px, 0) scale(${flyScale})`;
+    coin.style.opacity = tRaw > 0.92 ? String(Math.max(0, 1 - (tRaw - 0.92) / 0.08)) : '1';
+    if (tRaw < 1) requestAnimationFrame(tick);
+    else coin.remove();
+  }
+  requestAnimationFrame(tick);
+}
+
+function stepUpdateWithBattleSpeed(dt) {
+  const scaledDt = dt * (speedTestActive ? 6 : battleSpeed);
+  let remaining = scaledDt;
+  let guard = 0;
+  while (remaining > 0 && guard < 24) {
+    const step = Math.min(MAX_LOGIC_STEP, remaining);
+    update(step);
+    remaining -= step;
+    guard += 1;
+  }
+}
 
 function updateStageUiScale() {
   const viewport = window.visualViewport;
@@ -94,6 +260,104 @@ const CONFIG_FILES = [
 ];
 
 const ASSET_VERSION = '20260602-tower-top-anchor-v2';
+
+function loadUiAnchorDebugTuneFromStorage(defaultTune) {
+  try {
+    const raw = localStorage.getItem('pocketDefense.uiAnchorDebugTune');
+    if (!raw) return defaultTune;
+    const saved = JSON.parse(raw);
+    return {
+      active: saved.active === 'start' ? 'start' : 'gold',
+      gold: {
+        cx: Number.isFinite(saved.gold?.cx) ? saved.gold.cx : defaultTune.gold.cx,
+        cy: Number.isFinite(saved.gold?.cy) ? saved.gold.cy : defaultTune.gold.cy,
+        icon: Number.isFinite(saved.gold?.icon) ? saved.gold.icon : defaultTune.gold.icon
+      },
+      start: {
+        cx: Number.isFinite(saved.start?.cx) ? saved.start.cx : defaultTune.start.cx,
+        cy: Number.isFinite(saved.start?.cy) ? saved.start.cy : defaultTune.start.cy,
+        size: Number.isFinite(saved.start?.size) ? saved.start.size : defaultTune.start.size
+      }
+    };
+  } catch (_) {
+    return defaultTune;
+  }
+}
+
+function saveUiAnchorDebugTuneToStorage() {
+  try {
+    localStorage.setItem('pocketDefense.uiAnchorDebugTune', JSON.stringify(uiAnchorDebugTune));
+  } catch (_) {}
+}
+
+function applyUiAnchorDebugStyles() {
+  if (!battlefieldEl) return;
+  const g = uiAnchorDebugTune.gold;
+  const s = uiAnchorDebugTune.start;
+  battlefieldEl.style.setProperty('--gold-cx', `${g.cx}px`);
+  battlefieldEl.style.setProperty('--gold-cy', `${g.cy}px`);
+  battlefieldEl.style.setProperty('--gold-icon', `${g.icon}px`);
+  battlefieldEl.style.setProperty('--start-cx', `${s.cx}px`);
+  battlefieldEl.style.setProperty('--start-cy', `${s.cy}px`);
+  battlefieldEl.style.setProperty('--start-size', `${s.size}px`);
+  document.body?.classList.toggle('ui-anchor-debug', !!UI_ANCHOR_DEBUG);
+}
+
+function handleUiAnchorDebugKey(event) {
+  if (!UI_ANCHOR_DEBUG) return false;
+  const key = event.key.toLowerCase();
+  if (key === 'g') {
+    uiAnchorDebugTune.active = 'gold';
+    setMessage('UI调试：当前调整金币 icon。方向键移动，+/-以中心缩放。');
+    event.preventDefault();
+    return true;
+  }
+  if (key === 'b') {
+    uiAnchorDebugTune.active = 'start';
+    setMessage('UI调试：当前调整开战按钮。方向键移动，+/-以中心缩放。');
+    event.preventDefault();
+    return true;
+  }
+  const target = uiAnchorDebugTune[uiAnchorDebugTune.active];
+  if (!target) return false;
+  const step = event.shiftKey ? 5 : 1;
+  let changed = false;
+  if (event.key === 'ArrowLeft') {
+    if (uiAnchorDebugTune.active === 'start') target.cx += step;
+    else target.cx -= step;
+    changed = true;
+  }
+  else if (event.key === 'ArrowRight') {
+    if (uiAnchorDebugTune.active === 'start') target.cx -= step;
+    else target.cx += step;
+    changed = true;
+  }
+  else if (event.key === 'ArrowUp') { target.cy += step; changed = true; }
+  else if (event.key === 'ArrowDown') { target.cy -= step; changed = true; }
+  else if (event.key === '+' || event.key === '=') {
+    if (uiAnchorDebugTune.active === 'gold') target.icon += step;
+    else target.size += step;
+    changed = true;
+  } else if (event.key === '-' || event.key === '_') {
+    if (uiAnchorDebugTune.active === 'gold') target.icon = Math.max(10, target.icon - step);
+    else target.size = Math.max(20, target.size - step);
+    changed = true;
+  } else if (key === 'i' && uiAnchorDebugTune.active === 'gold') { target.icon += step; changed = true; }
+  else if (key === 'k' && uiAnchorDebugTune.active === 'gold') { target.icon = Math.max(10, target.icon - step); changed = true; }
+  else if (key === 'c') {
+    console.log('UI_ANCHOR_DEBUG', JSON.stringify(uiAnchorDebugTune));
+    setMessage(`UI调试值：${JSON.stringify(uiAnchorDebugTune)}`);
+    event.preventDefault();
+    return true;
+  }
+  if (!changed) return false;
+  applyUiAnchorDebugStyles();
+  saveUiAnchorDebugTuneToStorage();
+  console.log('UI_ANCHOR_DEBUG', JSON.stringify(uiAnchorDebugTune));
+  setMessage(`UI调试 ${uiAnchorDebugTune.active}: ${JSON.stringify(target)}`);
+  event.preventDefault();
+  return true;
+}
 
 const EFFECT_SEQUENCES = {
   lightBeam: {
@@ -140,8 +404,15 @@ const UI_PANEL_ASSETS = {
 const MIN_SPAWN_GAP = 46;
 const SPAWN_RETRY_DELAY = 0.16;
 const PORTAL_DEBUG = false;
+const UI_ANCHOR_DEBUG = false;
 const portalDebugTune = { x: 8, y: 26, scale: 1.15, scaleX: 0.8, scaleY: 0.72, rotation: 0.42 };
 const level02PortalDebugTune = { x: 20, y: 14, scale: 1.06, scaleX: 0.84, scaleY: 0.72, rotation: 0.36 };
+const uiAnchorDebugTune = loadUiAnchorDebugTuneFromStorage({
+  active: 'gold',
+  gold: { cx: 78, cy: 94, icon: 106 },
+  start: { cx: 98, cy: 90, size: 138 }
+});
+applyUiAnchorDebugStyles();
 
 function versionedSrc(src) {
   if (!src || src.startsWith('data:') || src.startsWith('blob:')) return src;
@@ -296,25 +567,27 @@ async function advanceToNextMap() {
   const order = mapsCfg.levelOrder?.length ? mapsCfg.levelOrder : Object.keys(mapsCfg.maps || {});
   const nextId = order[levelIndex + 1];
   if (!nextId) return false;
+  const inheritedGold = inheritedGoldFromCurrentLevel();
   await loadActiveMap(nextId);
   const preservedScore = game.score;
   const preservedHp = game.hp;
-  newGame();
+  newGame({ inheritedGold });
   game.score = preservedScore;
   game.hp = preservedHp;
-  setMessage(`进入第二关：${activeMap.name || activeMapId}。道路已切换，现在可以重新部署防线。`);
+  setMessage(`进入下一关：${activeMap.name || activeMapId}。上一关资产折算 +${inheritedGold} 金币，现在可以重新部署防线。`);
   syncLevelSelect();
   renderSide();
   return true;
 }
 
 function newGame(options = {}) {
+  hideWaveSettlePanel();
   const g = cfg.game;
   game = {
     phase: 'prep',
     hasStartedOnce: false,
     hp: g.baseHp,
-    gold: g.startGold,
+    gold: g.startGold + Math.max(0, Math.floor(options.inheritedGold || 0)),
     score: 0,
     waveIndex: 0,
     inventoryRows: g.inventory.rows,
@@ -339,7 +612,8 @@ function newGame(options = {}) {
     result: null,
     bossTest: !!options.bossTest,
     portalTime: 0,
-    screenShake: { time: 0, duration: 0, intensity: 0 }
+    screenShake: { time: 0, duration: 0, intensity: 0 },
+    waveStats: resetWaveStats()
   };
   if (!options.bossTest) levelSelectMode = 'normal';
   rollShop(false);
@@ -478,6 +752,55 @@ function spendGold(cost) {
   return true;
 }
 
+function addGold(amount) {
+  if (!Number.isFinite(amount) || amount === 0 || hasInfiniteGold()) return;
+  game.gold = Math.max(0, game.gold + Math.floor(amount));
+}
+
+function resetWaveStats() {
+  return { killGold: 0, mineGold: 0, rewardGold: 0, leakPenalty: 0 };
+}
+
+function getWaveStats() {
+  if (!game.waveStats) game.waveStats = resetWaveStats();
+  return game.waveStats;
+}
+
+function currentAssetValue() {
+  const towerValue = Object.values(game.deployed || {}).reduce((sum, item) => sum + towerSellValue(item), 0);
+  return Math.max(0, Math.floor((Number.isFinite(game.gold) ? game.gold : 0) + towerValue));
+}
+
+function inheritedGoldFromCurrentLevel() {
+  const rate = cfg.game.levelAssetCarryRate ?? 0.1;
+  return Math.max(0, Math.floor(currentAssetValue() * rate));
+}
+
+function mineCount() {
+  return Object.values(game.deployed || {}).filter(item => item?.type === 'mine').length;
+}
+
+function mineLimit() {
+  return towersCfg.mine?.maxCount ?? Infinity;
+}
+
+function canBuildTowerType(type) {
+  const def = towersCfg[type];
+  if (!def) return { ok: false, kind: 'unknown', reason: '未知建筑。' };
+  if (type === 'mine' && mineCount() >= mineLimit()) {
+    return { ok: false, kind: 'mineLimit', reason: '建造达到上限' };
+  }
+  if (!canAfford(def.cost)) {
+    return { ok: false, kind: 'gold', reason: `金币不足：${def.name} 需要 ${def.cost} 金币，还差 ${def.cost - game.gold}。` };
+  }
+  return { ok: true, kind: '', reason: '' };
+}
+
+function waveSettleText(waveNumber, stats) {
+  const net = stats.killGold + stats.mineGold + stats.rewardGold - stats.leakPenalty;
+  return `第 ${waveNumber} 波结算：击杀 +${stats.killGold}，金矿 +${stats.mineGold}，通关 +${stats.rewardGold}，漏怪 -${stats.leakPenalty}，净收益 ${net >= 0 ? '+' : ''}${net}。`;
+}
+
 function rollShop(pay = true) {
   const shop = waveCfg.shop;
   if (pay) {
@@ -513,7 +836,8 @@ function emptyInventoryIndex() {
 function buyTower(type) {
   if (game.phase !== 'prep') return setMessage('战斗中不能购买，请等本波结束。');
   const def = towersCfg[type];
-  if (!canAfford(def.cost)) return setMessage(`金币不足：${def.name} 需要 ${def.cost} 金币。`);
+  const buildCheck = canBuildTowerType(type);
+  if (!buildCheck.ok) return setMessage(buildCheck.reason);
   pendingBuild = { type, item: makeTower(type) };
   game.selected = null;
   const p = lastCanvasPointer || { x: canvas.width / 2, y: canvas.height / 2 };
@@ -530,12 +854,12 @@ function selectedItem() {
 }
 
 function canMerge(a, b) {
-  return a && b && a.type === b.type && a.level === b.level && a.level < 3;
+  return false;
 }
 
 function mergeGoldCost(type, fromLevel) {
   const baseCost = towersCfg[type]?.cost || 0;
-  return fromLevel === 2 ? baseCost * 4 : baseCost * 2;
+  return fromLevel === 1 ? baseCost * 3 : baseCost * 6;
 }
 
 function mergeRequirementText(type, level) {
@@ -594,22 +918,7 @@ function hideDragTooltip() {
 }
 
 function mergePreviewForRef(target) {
-  if (!dragging) return null;
-  const source = dragging.source;
-  if (sameRef(source, target)) return null;
-  const moving = getItemAt(source);
-  const targetItem = getItemAt(target);
-  if (!moving || !targetItem || !canMerge(moving, targetItem)) return null;
-  const cost = mergeGoldCost(moving.type, moving.level);
-  const ok = canAfford(cost);
-  const name = towersCfg[moving.type]?.name || '塔';
-  return {
-    ok,
-    cost,
-    text: ok
-      ? `合成 ${name} Lv${moving.level + 1}：消耗 ${cost} 金币 / 右键取消`
-      : `金币不足：合成需 ${cost}，还差 ${cost - game.gold} / 右键取消`
-  };
+  return null;
 }
 
 function inventoryRefFromPoint(clientX, clientY) {
@@ -652,6 +961,29 @@ function updateDragGhost(event) {
 function removeDragGhost() {
   dragGhostEl?.remove();
   dragGhostEl = null;
+}
+
+function updateShopBuildGhost(event, visible = false) {
+  if (!visible || !pendingBuild?.item || !shopDragging?.started) {
+    removeShopBuildGhost();
+    return;
+  }
+  const item = pendingBuild.item;
+  if (!shopBuildGhostEl) {
+    const def = towersCfg[item.type];
+    shopBuildGhostEl = document.createElement('div');
+    shopBuildGhostEl.className = 'drag-ghost shop-build-ghost';
+    shopBuildGhostEl.style.setProperty('--tower-color', def.color);
+    shopBuildGhostEl.innerHTML = `<img src="${towerIconImage(item.type, item.level)}" alt="${def.name} Lv${item.level}">`;
+    document.body.appendChild(shopBuildGhostEl);
+  }
+  shopBuildGhostEl.style.left = `${event.clientX}px`;
+  shopBuildGhostEl.style.top = `${event.clientY}px`;
+}
+
+function removeShopBuildGhost() {
+  shopBuildGhostEl?.remove();
+  shopBuildGhostEl = null;
 }
 
 function emptyInventoryRef() {
@@ -807,32 +1139,12 @@ function dropToRef(target, event = null) {
   const moving = getItemAt(source);
   if (!moving || moving.id !== dragging.itemId) return false;
   const targetItem = getItemAt(target);
-  const mergePreview = mergePreviewForRef(target);
-  if (mergePreview && !mergePreview.ok) {
-    setMessage(mergePreview.text.replace(' / 右键取消', ''));
-    return false;
-  }
 
   if (!targetItem) {
     setItemAt(source, null);
     setItemAt(target, moving);
     game.selected = target;
     setMessage(target.area === 'deployed' ? `已部署 ${towerName(moving)}。` : `已移动 ${towerName(moving)}。`);
-  } else if (canMerge(moving, targetItem)) {
-    const fromLevel = targetItem.level;
-    const nextLevel = fromLevel + 1;
-    const goldCost = mergeGoldCost(moving.type, fromLevel);
-    if (!canAfford(goldCost)) {
-      setMessage(`${mergeRequirementText(moving.type, fromLevel)} 当前金币不足，还差 ${goldCost - game.gold}。`);
-      return false;
-    }
-    spendGold(goldCost);
-    targetItem.level = nextLevel;
-    targetItem.cd = 0;
-    setItemAt(source, null);
-    game.selected = target;
-    spawnUpgradeEffectAt(target, event);
-    setMessage(`合成成功：${towerName(targetItem)}，消耗 ${goldCost} 金币。`);
   } else {
     setItemAt(source, targetItem);
     setItemAt(target, moving);
@@ -913,31 +1225,55 @@ function releasePointer(event, element = event.currentTarget) {
 
 function beginShopDrag(event, type) {
   if (!pointerPrimaryDown(event)) return;
-  if (game.phase !== 'prep') return setMessage('战斗中不能购买，请等本波结束。');
-  const def = towersCfg[type];
-  if (!canAfford(def.cost)) return setMessage(`金币不足：${def.name} 需要 ${def.cost} 金币。`);
-  pendingBuild = { type, item: makeTower(type) };
+  if (game.phase !== 'prep') return;
   shopDragging = { type, started: false, pointerId: event.pointerId ?? null, startClientX: event.clientX, startClientY: event.clientY };
-  game.selected = null;
-  hideTowerActionMenu();
-  updatePendingBuildPreview(lastCanvasPointer.x, lastCanvasPointer.y);
   capturePointer(event);
   event.preventDefault();
 }
 
+function startShopDragFromPending(event) {
+  if (!shopDragging || shopDragging.started) return false;
+  const type = shopDragging.type;
+  const buildCheck = canBuildTowerType(type);
+  if (!buildCheck.ok) {
+    const tip = buildCheck.kind === 'mineLimit' ? '建造达到上限' : '金币不足';
+    setMessage(tip);
+    floatText(lastCanvasPointer.x, lastCanvasPointer.y - 24, tip, '#fca5a5', { size: 18, life: 1.08, vy: -20, stroke: 'rgba(127, 29, 29, 0.45)' });
+    shopDragging = null;
+    pendingBuild = null;
+    placementPreview = null;
+    setShopDragCancelUi(false);
+    removeShopBuildGhost();
+    document.body.classList.remove('dragging');
+    renderSide();
+    return false;
+  }
+  pendingBuild = { type, item: makeTower(type) };
+  shopDragging.started = true;
+  game.selected = null;
+  hideTowerActionMenu();
+  hideShopInfoPanel();
+  const p = canvasPoint(event);
+  updatePendingBuildPreview(p.x, p.y);
+  removeShopBuildGhost();
+  return true;
+}
+
 function updateShopDrag(event) {
-  if (!shopDragging || !pendingBuild) return;
+  if (!shopDragging) return;
   if (!pointerStillDown(event)) {
     finishShopDrag(event);
     return;
   }
   const moved = Math.hypot(event.clientX - shopDragging.startClientX, event.clientY - shopDragging.startClientY);
-  if (!shopDragging.started && moved < 8) return;
-  shopDragging.started = true;
+  if (!shopDragging.started && moved < 12) return;
+  if (!shopDragging.started && !startShopDragFromPending(event)) return;
+  if (!pendingBuild) return;
   const overCancel = isInBottomBuildBlockByClient(event.clientX, event.clientY);
   setShopDragCancelUi(true, overCancel);
   const p = canvasPoint(event);
   updatePendingBuildPreview(p.x, p.y);
+  updateShopBuildGhost(event, overCancel);
   if (placementPreview && overCancel) {
     placementPreview.ok = false;
     placementPreview.reason = '拖回商店取消放置';
@@ -952,12 +1288,19 @@ function finishShopDrag(event) {
   const cancelledByShopZone = wasStarted && isInBottomBuildBlockByClient(event.clientX, event.clientY);
   shopDragging = null;
   document.body.classList.remove('dragging');
+  removeShopBuildGhost();
   setShopDragCancelUi(false);
   if (!pendingBuild) return;
-  if (!wasStarted || cancelledByShopZone) {
+  if (!wasStarted) {
     pendingBuild = null;
     placementPreview = null;
-    setMessage(cancelledByShopZone ? '已拖回商店，取消放置。' : '已取消建造。');
+    renderSide();
+    return;
+  }
+  if (cancelledByShopZone) {
+    pendingBuild = null;
+    placementPreview = null;
+    setMessage('已拖回商店，取消放置。');
     renderSide();
     return;
   }
@@ -969,6 +1312,7 @@ function cancelPendingBuild() {
   pendingBuild = null;
   shopDragging = null;
   placementPreview = null;
+  removeShopBuildGhost();
   document.body.classList.remove('dragging');
   setShopDragCancelUi(false);
   setMessage('已取消建造。');
@@ -989,7 +1333,8 @@ function updatePlacementPreview(x, y, targetSlot = null) {
   const targetRef = targetSlot ? { area: 'deployed', slotId: targetSlot.id } : null;
   const mergePreview = dragging && targetRef ? mergePreviewForRef(targetRef) : null;
   const ignoreSlotId = dragging?.source?.area === 'deployed' ? dragging.source.slotId : null;
-  const placement = mergePreview ? { ok: mergePreview.ok, reason: mergePreview.text } : canCreateTowerSlot(x, y, ignoreSlotId);
+  const isMovingExisting = !!(dragging?.started && dragging.source?.area === 'deployed' && !mergePreview);
+  const placement = mergePreview ? { ok: mergePreview.ok, reason: mergePreview.text } : canCreateTowerSlot(x, y, isMovingExisting ? null : ignoreSlotId);
   placementPreview = {
     x,
     y,
@@ -1037,16 +1382,19 @@ function placePendingBuild(event) {
     shopDragging = null;
     placementPreview = null;
     setShopDragCancelUi(false);
+    removeShopBuildGhost();
     document.body.classList.remove('dragging');
     setMessage(`${placement.reason}，建造失败，请重新从商店拖拽。`);
     renderSide();
     return true;
   }
-  if (!canAfford(def.cost)) {
+  const buildCheck = canBuildTowerType(pendingBuild.type);
+  if (!buildCheck.ok) {
     pendingBuild = null;
     placementPreview = null;
     setShopDragCancelUi(false);
-    setMessage(`金币不足：${def.name} 需要 ${def.cost} 金币。`);
+    removeShopBuildGhost();
+    setMessage(buildCheck.reason);
     renderSide();
     return true;
   }
@@ -1059,6 +1407,7 @@ function placePendingBuild(event) {
   shopDragging = null;
   placementPreview = null;
   setShopDragCancelUi(false);
+  removeShopBuildGhost();
   document.body.classList.remove('dragging');
   renderSide();
   return true;
@@ -1178,19 +1527,19 @@ function clickDeployed(slotId) {
 }
 
 function selectedSellValue() {
-  const item = selectedItem();
-  if (!item) return 0;
-  return Math.ceil(towersCfg[item.type].cost * (0.55 + (item.level - 1) * 0.45));
+  return towerSellValue(selectedItem());
 }
 
 function towerSellValue(item) {
   if (!item) return 0;
-  return Math.ceil(towersCfg[item.type].cost * (0.55 + (item.level - 1) * 0.45));
+  if (item.type === 'mine') return [20, 45, 80][item.level - 1] || 20;
+  return Math.ceil(towersCfg[item.type].cost * (0.50 + (item.level - 1) * 0.45));
 }
 
 function upgradeDirectCost(item) {
   if (!item || item.level >= 3) return 0;
-  return mergeGoldCost(item.type, item.level);
+  const baseCost = towersCfg[item.type]?.cost || 0;
+  return item.level === 1 ? baseCost * 3 : baseCost * 6;
 }
 
 function hideTowerActionMenu() {
@@ -1209,18 +1558,20 @@ function showTowerActionMenu(slotId, event = null) {
   const sellValue = towerSellValue(item);
   const upgradeCost = upgradeDirectCost(item);
   const canUpgrade = item.level < 3;
+  const upgradeOk = canUpgrade && canAfford(upgradeCost);
+  const upgradeText = canUpgrade ? (upgradeOk ? upgradeCost : `${upgradeCost - game.gold}`) : 'MAX';
   towerActionMenuEl.dataset.slotId = slotId;
   towerActionMenuEl.innerHTML = `
-    <button class="tower-menu-btn sell" type="button" data-action="sell">出售 <span class="mini-coin" aria-hidden="true"></span>${sellValue}</button>
-    <button class="tower-menu-btn upgrade" type="button" data-action="upgrade" ${canUpgrade ? '' : 'disabled'}>升级 <span class="mini-coin" aria-hidden="true"></span>${canUpgrade ? upgradeCost : 'MAX'}</button>
+    <button class="tower-menu-btn sell" type="button" data-action="sell"><span class="mini-coin" aria-hidden="true"></span><span class="tower-menu-price">${sellValue}</span></button>
+    <button class="tower-menu-btn upgrade ${upgradeOk ? 'can-upgrade' : 'cant-upgrade'}" type="button" data-action="upgrade" ${canUpgrade ? '' : 'disabled'}><span class="mini-coin" aria-hidden="true"></span><span class="tower-menu-price">${upgradeText}</span></button>
   `;
   const rect = battlefieldEl.getBoundingClientRect();
   const pos = event ? canvasPoint(event) : { x: slot.x, y: slot.y };
-  const menuWidth = 118;
-  const menuHeight = 139;
+  const menuWidth = 142;
+  const menuHeight = 174;
   const towerRect = towerSpriteRect(slot, item);
   const towerPxWidth = towerRect.width * (rect.width / canvas.width);
-  const menuGap = 4;
+  const menuGap = -10;
   const desiredLeft = (pos.x / canvas.width) * rect.width + towerPxWidth / 2 + menuGap;
   const fallbackLeft = (pos.x / canvas.width) * rect.width - towerPxWidth / 2 - menuGap - menuWidth;
   const left = desiredLeft + menuWidth <= rect.width - 8 ? desiredLeft : Math.max(8, fallbackLeft);
@@ -1235,7 +1586,7 @@ function sellTowerBySlot(slotId) {
   const value = towerSellValue(item);
   game.deployed[slotId] = null;
   cleanupEmptyTowerSlots();
-  game.gold += value;
+  addGold(value);
   game.selected = null;
   hideTowerActionMenu();
   setMessage(`出售 ${towerName(item)}，获得 ${value} 金币。`);
@@ -1263,7 +1614,7 @@ function sellSelected() {
   if (!item || game.phase !== 'prep') return setMessage('准备阶段选择一个塔后才能出售。');
   const value = selectedSellValue();
   setItemAt(game.selected, null);
-  game.gold += value;
+  addGold(value);
   game.selected = null;
   setMessage(`出售成功，获得 ${value} 金币。`);
   renderSide();
@@ -1282,9 +1633,12 @@ function expandInventory() {
 }
 
 function createWaveRetrySnapshot() {
-  const snapshot = JSON.parse(JSON.stringify({ ...game, retrySnapshot: null }));
+  const source = { ...game, retrySnapshot: null };
+  const snapshot = JSON.parse(JSON.stringify(source));
+  snapshot.retryWaveIndex = game.waveIndex;
   snapshot.phase = 'prep';
   snapshot.result = null;
+  snapshot.selected = null;
   snapshot.enemies = [];
   snapshot.projectiles = [];
   snapshot.floating = [];
@@ -1293,9 +1647,10 @@ function createWaveRetrySnapshot() {
   snapshot.currentWaveSpawned = 0;
   snapshot.currentWaveTotal = 0;
   snapshot.waveAlive = false;
-  snapshot.bossReady = false;
+  snapshot.bossReady = game.waveIndex >= waveCfg.waves.length && !!(waveCfg.boss?.enabled && !game.bossDefeated);
   snapshot.bossActive = false;
   snapshot.screenShake = { time: 0, duration: 0, intensity: 0 };
+  snapshot.waveStats = resetWaveStats();
   return snapshot;
 }
 
@@ -1303,16 +1658,27 @@ function restoreWaveRetrySnapshot() {
   const snapshot = game?.retrySnapshot;
   if (!snapshot) {
     newGame();
-    setMessage('未找到本关开始数据，已重新开始。');
+    setMessage('未找到当前波次开始数据，已重新开始本关。');
     return;
   }
   const restored = JSON.parse(JSON.stringify(snapshot));
   restored.retrySnapshot = JSON.parse(JSON.stringify(snapshot));
   game = restored;
   dragging = null;
+  pendingBuild = null;
+  shopDragging = null;
   placementPreview = null;
   hoveredSlotId = null;
-  setMessage(`已回到第 ${game.waveIndex + 1} 关开始前状态。`);
+  inventoryDragPreviewIndex = null;
+  lastInventoryDragTarget = null;
+  suppressNextCanvasClick = false;
+  hideDragTooltip();
+  hideTowerActionMenu();
+  hideWaveSettlePanel();
+  setShopDragCancelUi(false);
+  document.body.classList.remove('dragging');
+  canvas.classList.remove('drag-over');
+  setMessage(`已回到第 ${game.waveIndex + 1} 波开始前状态。`);
   renderSide();
 }
 
@@ -1381,6 +1747,7 @@ function adjustedWaveSpawns(wave) {
 
 function startWave() {
   if (game.phase !== 'prep') return;
+  hideWaveSettlePanel();
   if (game.waveIndex >= waveCfg.waves.length) {
     const bossCfg = waveCfg.boss;
     if (bossCfg?.enabled && !game.bossDefeated) startBoss();
@@ -1393,6 +1760,7 @@ function startWave() {
   game.hasStartedOnce = true;
   game.selected = null;
   game.waveAlive = true;
+  game.waveStats = resetWaveStats();
   game.spawnQueue = [];
   game.currentWaveTotal = spawns.reduce((sum, group) => sum + group.count, 0);
   game.currentWaveSpawned = 0;
@@ -1418,8 +1786,12 @@ function finishWave() {
     const level = towersCfg.mine.levels[item.level - 1];
     return sum + level.income;
   }, 0);
-  game.gold += wave.reward + mineIncome;
+  const stats = getWaveStats();
+  stats.mineGold = mineIncome;
+  stats.rewardGold = wave.reward;
+  addGold(wave.reward + mineIncome);
   game.score += game.hp * 3 + mineIncome;
+  const settle = waveSettleText(wave.wave, stats);
   game.waveIndex += 1;
   game.phase = 'prep';
   game.waveAlive = false;
@@ -1428,15 +1800,18 @@ function finishWave() {
     const bossCfg = waveCfg.boss;
     if (bossCfg?.enabled && !game.bossDefeated) {
       game.bossReady = true;
-      setMessage(`第 ${wave.wave} 波结束：奖励 ${wave.reward}，金矿收入 ${mineIncome}。现在可以调整建筑布置，准备好后点击开始战斗挑战 BOSS。`);
+      setMessage(`${settle} 现在可以调整建筑布置，准备好后点击开始战斗挑战 BOSS。`);
     } else {
       game.phase = 'ended';
       game.result = 'win';
       setMessage(`胜利！基地剩余 ${game.hp} 血，最终分数 ${game.score}。`);
     }
   } else {
-    setMessage(`第 ${wave.wave} 波结束：奖励 ${wave.reward}，金矿收入 ${mineIncome}。现在可以重新拖拽调整部署。`);
+    setMessage(`${settle} 现在可以重新拖拽调整部署。`);
   }
+  const showBossReady = game.waveIndex >= waveCfg.waves.length && !!(waveCfg.boss?.enabled && !game.bossDefeated);
+  game.retrySnapshot = createWaveRetrySnapshot();
+  showWaveSettlePanel(wave.wave, stats, showBossReady);
   renderSide();
 }
 
@@ -1717,8 +2092,21 @@ function updateEnemies(dt) {
       enemy.waypoint += 1;
       if (enemy.waypoint >= path.length) {
         enemy.dead = true;
-        game.hp -= enemiesCfg[enemy.type].baseDamage;
-        floatText(enemy.x, enemy.y, `-${enemiesCfg[enemy.type].baseDamage}❤`, '#fb7185');
+        const enemyDef = enemiesCfg[enemy.type];
+        if (enemyDef?.isBoss) {
+          game.hp = 0;
+          game.result = 'lose';
+          floatText(enemy.x, enemy.y, 'Boss突破!', '#fb7185', { life: 1.1, size: 24, stroke: '#7f1d1d' });
+          setMessage('防守失败：Boss 没有被击败，已突破防线。');
+          continue;
+        }
+        game.hp -= enemyDef.baseDamage;
+        const leakPenalty = enemyDef.reward || 0;
+        if (leakPenalty > 0) {
+          addGold(-leakPenalty);
+          getWaveStats().leakPenalty += leakPenalty;
+        }
+        floatText(enemy.x, enemy.y, `-${enemyDef.baseDamage}❤`, '#fb7185');
       }
     } else {
       enemy.x += (dx / dist) * speed * dt;
@@ -1884,7 +2272,7 @@ function fireTower(tower, slot, target, stat, targets = [target]) {
   if (tower.type === 'thunder') {
     damageEnemy(target, stat.damage, tower.type, stat);
     spawnHitEffect('thunderHit', targetHit.x, targetHit.y);
-    explode({ tx: target.x, ty: target.y, splash: stat.splash, damage: Math.round(stat.damage * 0.55), primaryTargetId: target.id });
+    explode({ tx: target.x, ty: target.y, splash: stat.splash, damage: Math.round(stat.damage * 0.70), primaryTargetId: target.id });
     game.projectiles.push({ type: 'effectBeam', effect: 'thunderBeam', x: origin.x, y: origin.y, tx: targetHit.x, ty: targetHit.y, targetExtend: 12, age: 0, duration: EFFECT_SEQUENCES.thunderBeam.duration, color });
   } else {
     if (tower.type === 'ice') {
@@ -1978,9 +2366,13 @@ function damageEnemy(enemy, amount, towerType, stat) {
 function killEnemy(enemy) {
   enemy.dead = true;
   const def = enemiesCfg[enemy.type];
-  game.gold += def.reward;
-  game.score += def.reward * 12;
-  floatText(enemy.x, enemy.y, `+${def.reward}`, '#fde68a');
+  const reward = def.reward || 0;
+  if (reward > 0) {
+    addGold(reward);
+    getWaveStats().killGold += reward;
+    floatText(enemy.x, enemy.y, `+${reward}`, '#fde68a');
+  }
+  game.score += reward * 12;
   if (def.splitInto) {
     for (let i = 0; i < def.splitInto.count; i++) {
       spawnEnemy(def.splitInto.type, i * -10);
@@ -1996,13 +2388,13 @@ function killEnemy(enemy) {
 }
 
 function floatText(x, y, text, color, options = {}) {
-  game.floating.push({ x, y, text, color, life: options.life || 0.8, maxLife: options.life || 0.8, size: options.size || 16, stroke: options.stroke || null });
+  game.floating.push({ x, y, text, color, life: options.life || 0.8, maxLife: options.life || 0.8, size: options.size || 16, stroke: options.stroke || null, vy: options.vy ?? -32 });
 }
 
 function updateFloating(dt) {
   for (const f of game.floating) {
     f.life -= dt;
-    f.y -= 32 * dt;
+    f.y += (f.vy ?? -32) * dt;
   }
 }
 
@@ -2027,7 +2419,46 @@ function handleInventoryPointerMove(event) {
 
 function renderGoldHud() {
   if (!goldHudEl) return;
-  goldHudEl.innerHTML = `<span class="coin-icon" aria-hidden="true"></span><span class="coin-times">×</span><span class="coin-value">${goldText()}</span>`;
+  goldHudEl.innerHTML = `<span class="coin-icon" aria-hidden="true"></span><span class="coin-text">X ${goldText()}</span>`;
+}
+
+function hideShopInfoPanel() {
+  activeShopInfoType = null;
+  if (!shopInfoPanelEl) return;
+  shopInfoPanelEl.hidden = true;
+  shopInfoPanelEl.innerHTML = '';
+}
+
+function showShopInfoPanel(type) {
+  const def = towersCfg[type];
+  if (!def || !shopInfoPanelEl) return;
+  activeShopInfoType = type;
+  const levels = Array.isArray(def.levels) ? def.levels : [];
+  const statLines = levels.map((level, index) => {
+    const parts = [];
+    if (Number.isFinite(level.damage) && level.damage > 0) parts.push(`伤害 ${level.damage}`);
+    if (Number.isFinite(level.range) && level.range > 0) parts.push(`范围 ${level.range}`);
+    if (Number.isFinite(level.cooldown) && level.cooldown < 90) parts.push(`间隔 ${level.cooldown}s`);
+    if (Number.isFinite(level.splash) && level.splash > 0) parts.push(`溅射 ${level.splash}`);
+    if (Number.isFinite(level.slow) && level.slow > 0) parts.push(`减速 ${Math.round(level.slow * 100)}%`);
+    if (Number.isFinite(level.targetCount) && level.targetCount > 1) parts.push(`目标 ${level.targetCount}`);
+    if (Number.isFinite(level.income) && level.income > 0) parts.push(`每波 +${level.income}`);
+    return `<div class="shop-info-stat"><b>Lv${index + 1}</b><span>${parts.join(' / ') || '辅助建筑'}</span></div>`;
+  }).join('');
+  shopInfoPanelEl.innerHTML = `
+    <div class="shop-info-head">
+      <div class="shop-info-icon" style="--tower-color:${def.color}"><img src="${towerIconImage(type, 1)}" alt="${def.name}"></div>
+      <div><div class="shop-info-title-row"><h3>${def.name}</h3><div class="shop-info-cost"><span class="mini-coin" aria-hidden="true"></span>${def.cost}</div></div></div>
+    </div>
+    <p>${def.description || ''}</p>
+    <div class="shop-info-stats">${statLines}</div>
+  `;
+  shopInfoPanelEl.hidden = false;
+}
+
+function toggleShopInfoPanel(type) {
+  if (activeShopInfoType === type && shopInfoPanelEl && !shopInfoPanelEl.hidden) hideShopInfoPanel();
+  else showShopInfoPanel(type);
 }
 
 function renderSide() {
@@ -2040,7 +2471,9 @@ function renderSide() {
     shopDragging = null;
     placementPreview = null;
   }
-  commandDeckEl?.classList.toggle('is-hidden', game.phase !== 'prep');
+  commandDeckEl?.classList.toggle('is-hidden', false);
+  commandDeckEl?.classList.toggle('is-locked', game.phase !== 'prep');
+  if (game.phase !== 'prep') hideShopInfoPanel();
   syncCommandDeckCollapse();
 
   shopEl.innerHTML = '';
@@ -2049,15 +2482,30 @@ function renderSide() {
     const card = document.createElement('div');
     card.className = 'shop-card';
     card.tabIndex = 0;
-    card.title = `${def.name}：${def.cost} 金币`;
+    const buildCheck = canBuildTowerType(type);
+    const shownCost = buildCheck.kind === 'mineLimit' ? 'max' : def.cost;
+    card.title = '';
     card.setAttribute('role', 'button');
     if (pendingBuild?.type === type) card.classList.add('selected');
+    if (!buildCheck.ok) card.classList.add('cant-afford');
+    if (game.phase !== 'prep') card.classList.add('shop-locked');
+    if (activeShopInfoType === type && shopInfoPanelEl && !shopInfoPanelEl.hidden) card.classList.add('info-active');
     card.innerHTML = `
       <div class="icon tower-icon shop-icon" style="--tower-color:${def.color}"><img src="${towerIconImage(type, 1)}" alt="${def.name}"></div>
-      <div class="shop-item-label"><span class="shop-item-name">${def.name}</span><span class="mini-coin" aria-hidden="true"></span><span class="shop-item-cost">${def.cost}</span></div>
+      <div class="shop-item-label"><span class="shop-item-name">${def.name}</span><span class="mini-coin" aria-hidden="true"></span><span class="shop-item-cost">${shownCost}</span></div>
       <p>${def.description}</p>
     `;
-    card.addEventListener('pointerdown', event => beginShopDrag(event, type));
+    card.addEventListener('pointerdown', event => {
+      if (!pointerPrimaryDown(event)) return;
+      event.stopPropagation();
+      beginShopDrag(event, type);
+    });
+    card.addEventListener('pointerup', event => {
+      event.stopPropagation();
+      const wasDragging = shopDragging?.started;
+      finishShopDrag(event);
+      if (!wasDragging && game.phase === 'prep') showShopInfoPanel(type);
+    });
     shopEl.appendChild(card);
   }
   for (let i = game.shop.length; i < 4; i += 1) {
@@ -2145,8 +2593,8 @@ function draw() {
   applyScreenShake();
   drawBackground();
   if (game.phase === 'prep') drawPath();
-  drawPlacementPreview();
   drawWorldObjects();
+  drawPlacementPreview();
   drawProjectiles();
   drawTopBars();
   drawFloating();
@@ -2205,6 +2653,7 @@ function drawTowerSlots() {
 function drawTowerSlot(slot, item) {
   const selected = game.selected?.area === 'deployed' && game.selected.slotId === slot.id;
   const hovered = hoveredSlotId === slot.id;
+  const isDraggingThis = dragging?.source?.area === 'deployed' && dragging.source.slotId === slot.id && dragging.started;
   ctx.save();
   ctx.translate(slot.x, slot.y);
 
@@ -2220,8 +2669,7 @@ function drawTowerSlot(slot, item) {
       ctx.fill();
       ctx.stroke();
     }
-    const isDraggingThis = dragging?.source?.area === 'deployed' && dragging.source.slotId === slot.id && dragging.started;
-    if (!isDraggingThis) drawTowerSprite(slot, item, 1, selected || hovered);
+    drawTowerSprite(slot, item, isDraggingThis ? 0.24 : 1, selected || hovered);
   } else {
     ctx.fillStyle = game.phase === 'prep' ? 'rgba(226, 232, 240, 0.40)' : 'rgba(148, 163, 184, 0.20)';
     ctx.strokeStyle = game.phase === 'prep' ? 'rgba(203, 213, 225, 0.32)' : 'rgba(148, 163, 184, 0.16)';
@@ -2272,8 +2720,8 @@ function drawTowerSprite(slot, item, alpha = 1, highlighted = false) {
   ctx.font = '900 12px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.strokeText(`Lv${item.level}`, 0, 31);
-  ctx.fillText(`Lv${item.level}`, 0, 31);
+  ctx.strokeText(`Lv${item.level}`, 0, 20);
+  ctx.fillText(`Lv${item.level}`, 0, 20);
   ctx.restore();
 }
 
@@ -2322,8 +2770,10 @@ function drawPlacementPreview() {
     ctx.setLineDash([]);
   }
 
-  // 拖拽时不再绘制建筑底部圆圈；只显示半透明建筑本体。
-  drawTowerSprite({ x: 0, y: 0 }, item, ok ? 0.55 : 0.34, false);
+  // 地图区域必须绘制真实塔影，保证鼠标指向位置和最终落点一致；只有拖回商店取消区时改用顶层 DOM 小虚影避免被 UI 遮挡。
+  if (!(pendingBuild && shopDragging?.started && reason === '拖回商店取消放置')) {
+    drawTowerSprite({ x: 0, y: 0 }, item, ok ? 0.55 : 0.34, false);
+  }
 
   ctx.fillStyle = ok ? '#bbf7d0' : '#fecaca';
   ctx.font = '900 14px Microsoft YaHei, sans-serif';
@@ -2882,7 +3332,8 @@ function drawTopHudArt() {
   ctx.shadowBlur = 0;
   ctx.shadowOffsetX = 0;
   ctx.shadowOffsetY = 5;
-  ctx.drawImage(centerImg, centerX, centerY, centerW, centerH);
+  // 中间小建筑 UI 已移除：保留其布局占位，避免血条/波次条位置变化。
+  // ctx.drawImage(centerImg, centerX, centerY, centerW, centerH);
   drawImageContain(hpImg, leftX, sideY, sideW, sideH, false);
   drawImageContain(spawnImg, rightX, sideY, sideW, sideH, true);
   ctx.shadowColor = 'transparent';
@@ -2923,8 +3374,17 @@ function drawCurrentWaveLabel(x, y, w, h) {
   const currentWave = Math.max(1, Math.min(game.waveIndex + 1, totalWaves));
   const label = game.bossActive ? 'BOSS' : `第 ${currentWave} 波`;
   const tx = x + w * 0.5;
-  const ty = y + h + 14;
+  const ty = y + h * 1.02;
+  const bgW = Math.max(72, ctx.measureText(label).width + 34);
+  const bgH = 25;
+  const gradient = ctx.createLinearGradient(tx - bgW / 2, ty, tx + bgW / 2, ty);
+  gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+  gradient.addColorStop(0.18, 'rgba(0, 0, 0, 0.58)');
+  gradient.addColorStop(0.82, 'rgba(0, 0, 0, 0.58)');
+  gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
   ctx.save();
+  ctx.fillStyle = gradient;
+  ctx.fillRect(tx - bgW / 2, ty - bgH / 2, bgW, bgH);
   ctx.font = '900 18px Microsoft YaHei, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -3200,26 +3660,11 @@ function towerSlotAtCanvasEvent(event, ignoreSlotId = null) {
 }
 
 function bestMergeSlotForDragged(event, radius = 86) {
-  if (!dragging?.source) return null;
-  const moving = getItemAt(dragging.source);
-  if (!moving) return null;
-  const { x, y } = canvasPoint(event);
-  let best = null;
-  let bestDist = Infinity;
-  for (const slot of allTowerSlots()) {
-    if (dragging.source.area === 'deployed' && slot.id === dragging.source.slotId) continue;
-    const targetItem = game.deployed[slot.id];
-    if (!canMerge(moving, targetItem)) continue;
-    const dist = Math.hypot(slot.x - x, slot.y - y);
-    if (dist <= radius && dist < bestDist) {
-      best = slot;
-      bestDist = dist;
-    }
-  }
-  return best;
+  return null;
 }
 
 function canvasClick(event) {
+  hideShopInfoPanel();
   if (suppressNextCanvasClick) {
     suppressNextCanvasClick = false;
     return;
@@ -3255,7 +3700,7 @@ function syncCommandDeckCollapse() {
 function loop(time) {
   const dt = Math.min((time - lastTime) / 1000 || 0, 0.033);
   lastTime = time;
-  update(dt);
+  stepUpdateWithBattleSpeed(dt);
   draw();
   requestAnimationFrame(loop);
 }
@@ -3278,7 +3723,10 @@ function handleGoldHudClick(event) {
   if (goldHudClickCount >= 3) {
     goldHudClickCount = 0;
     goldHudFirstClickTime = 0;
+    speedTestUnlocked = true;
+    updateBattleSpeedUi();
     toggleLevelSelectPanel();
+    setMessage('测试功能已解锁：可在选关面板下方单独开启 X6。');
   }
 }
 
@@ -3327,6 +3775,9 @@ async function toggleFullscreen() {
 }
 
 startWaveBtn.addEventListener('click', toggleMainAction);
+battleSpeedBtn?.addEventListener('click', toggleBattleSpeed);
+speedTestBtn?.addEventListener('click', toggleSpeedTest);
+waveSettleCloseBtn?.addEventListener('click', hideWaveSettlePanel);
 restartBtn?.addEventListener('click', restartCurrentLevel);
 if (rerollBtn) rerollBtn.addEventListener('click', () => rollShop(true));
 if (expandBtn) expandBtn.addEventListener('click', expandInventory);
@@ -3334,7 +3785,11 @@ if (sellBtn) sellBtn.addEventListener('click', sellSelected);
 deckCollapseBtn?.addEventListener('click', () => setCommandDeckCollapsed(true));
 deckExpandBtn?.addEventListener('click', () => setCommandDeckCollapsed(false));
 helpBtn?.addEventListener('click', () => helpDialog?.showModal());
-canvas.addEventListener('click', canvasClick);
+canvas.addEventListener('click', event => {
+  const slot = towerSlotAtCanvasEvent(event);
+  if (!slot || !game?.deployed?.[slot.id]) hideShopInfoPanel();
+  canvasClick(event);
+});
 
 canvas.addEventListener('dragstart', event => {
   event.preventDefault();
@@ -3577,16 +4032,36 @@ fullscreenBtn?.addEventListener('click', event => {
 document.addEventListener('fullscreenchange', updateFullscreenUi);
 window.addEventListener('resize', () => {
   updateStageUiScale();
-  requestAnimationFrame(updateStageUiScale);
+  applyUiAnchorDebugStyles();
+  requestAnimationFrame(() => {
+    updateStageUiScale();
+    applyUiAnchorDebugStyles();
+  });
 });
 window.visualViewport?.addEventListener('resize', () => {
   updateStageUiScale();
-  requestAnimationFrame(updateStageUiScale);
+  applyUiAnchorDebugStyles();
+  requestAnimationFrame(() => {
+    updateStageUiScale();
+    applyUiAnchorDebugStyles();
+  });
 });
-window.visualViewport?.addEventListener('scroll', updateStageUiScale);
+window.visualViewport?.addEventListener('scroll', () => {
+  updateStageUiScale();
+  applyUiAnchorDebugStyles();
+});
 updateFullscreenUi();
 
-document.addEventListener('keydown', handlePortalDebugKey);
+document.addEventListener('keydown', event => {
+  if (handleUiAnchorDebugKey(event)) return;
+  handlePortalDebugKey(event);
+});
+window.addEventListener('pointerdown', event => {
+  if (event.target?.closest?.('.shop-info-panel')) return;
+  if (event.target?.closest?.('.shop-icon')) return;
+  hideShopInfoPanel();
+}, true);
+
 goldHudEl?.addEventListener('pointerdown', handleGoldHudClick);
 goldHudEl?.addEventListener('click', event => {
   event.preventDefault();
@@ -3596,6 +4071,7 @@ goldHudEl?.addEventListener('keydown', event => {
   if (event.key !== 'Enter' && event.key !== ' ') return;
   handleGoldHudClick(event);
 });
+updateBattleSpeedUi();
 levelSelectEl?.addEventListener('change', event => chooseLevel(event.target.value));
 
 towerActionMenuEl?.addEventListener('click', event => {

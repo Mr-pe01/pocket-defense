@@ -9,77 +9,77 @@
       { "tower": "mine", "weight": 16 }
     ]
   },
-  "difficultyNotes": "普通兵占比随波次降低，第 7-8 波不再出现普通兵；后期减少拖时长的大数量堆怪，主要通过更快、更硬的精英怪和每关 10% 属性成长制造压力。",
+  "difficultyNotes": "Demo 2.1：击杀金币固定，数量适中，难度主要靠类型组合、血量/速度成长和升级经济压力。",
   "waves": [
     {
       "wave": 1,
-      "reward": 18,
+      "reward": 10,
       "spawns": [
-        { "type": "grunt", "count": 8, "interval": 0.84 }
+        { "type": "grunt", "count": 10, "interval": 0.86 }
       ]
     },
     {
       "wave": 2,
-      "reward": 24,
+      "reward": 12,
       "spawns": [
-        { "type": "grunt", "count": 12, "interval": 0.76 },
-        { "type": "runner", "count": 5, "interval": 0.84 }
+        { "type": "grunt", "count": 12, "interval": 0.78 },
+        { "type": "runner", "count": 4, "interval": 0.92 }
       ]
     },
     {
       "wave": 3,
-      "reward": 30,
+      "reward": 14,
       "spawns": [
-        { "type": "grunt", "count": 11, "interval": 0.78 },
-        { "type": "runner", "count": 5, "interval": 0.82 },
-        { "type": "brute", "count": 2, "interval": 1.22 }
+        { "type": "grunt", "count": 9, "interval": 0.78 },
+        { "type": "runner", "count": 5, "interval": 0.86 },
+        { "type": "splitter", "count": 3, "interval": 1.02 }
       ]
     },
     {
       "wave": 4,
-      "reward": 28,
+      "reward": 16,
       "spawns": [
-        { "type": "grunt", "count": 9, "interval": 0.66 },
-        { "type": "runner", "count": 11, "interval": 0.64 },
-        { "type": "splitter", "count": 4, "interval": 1.02 },
-        { "type": "brute", "count": 4, "interval": 1.08 }
+        { "type": "grunt", "count": 8, "interval": 0.70 },
+        { "type": "runner", "count": 7, "interval": 0.76 },
+        { "type": "splitter", "count": 5, "interval": 0.92 },
+        { "type": "brute", "count": 1, "interval": 1.18 }
       ]
     },
     {
       "wave": 5,
-      "reward": 28,
+      "reward": 18,
       "spawns": [
-        { "type": "grunt", "count": 6, "interval": 0.58 },
-        { "type": "runner", "count": 16, "interval": 0.48 },
-        { "type": "splitter", "count": 10, "interval": 0.78 },
-        { "type": "brute", "count": 8, "interval": 0.92 }
+        { "type": "grunt", "count": 5, "interval": 0.68 },
+        { "type": "runner", "count": 8, "interval": 0.68 },
+        { "type": "splitter", "count": 7, "interval": 0.82 },
+        { "type": "brute", "count": 2, "interval": 1.05 }
       ]
     },
     {
       "wave": 6,
-      "reward": 34,
+      "reward": 20,
       "spawns": [
-        { "type": "runner", "count": 22, "interval": 0.34 },
-        { "type": "splitter", "count": 15, "interval": 0.54 },
-        { "type": "brute", "count": 8, "interval": 0.78 }
+        { "type": "runner", "count": 9, "interval": 0.62 },
+        { "type": "splitter", "count": 8, "interval": 0.78 },
+        { "type": "brute", "count": 3, "interval": 0.96 }
       ]
     },
     {
       "wave": 7,
-      "reward": 42,
+      "reward": 22,
       "spawns": [
-        { "type": "runner", "count": 26, "interval": 0.30 },
-        { "type": "splitter", "count": 18, "interval": 0.48 },
-        { "type": "brute", "count": 12, "interval": 0.66 }
+        { "type": "runner", "count": 10, "interval": 0.58 },
+        { "type": "splitter", "count": 9, "interval": 0.72 },
+        { "type": "brute", "count": 4, "interval": 0.90 }
       ]
     },
     {
       "wave": 8,
-      "reward": 52,
+      "reward": 24,
       "spawns": [
-        { "type": "runner", "count": 30, "interval": 0.26 },
-        { "type": "splitter", "count": 22, "interval": 0.42 },
-        { "type": "brute", "count": 16, "interval": 0.58 }
+        { "type": "runner", "count": 11, "interval": 0.54 },
+        { "type": "splitter", "count": 10, "interval": 0.68 },
+        { "type": "brute", "count": 5, "interval": 0.84 }
       ]
     }
   ],
