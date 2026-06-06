@@ -50,6 +50,8 @@ let mapImage;
 let roadMaskImage;
 let roadMaskCanvas;
 let roadMaskCtx;
+let roadMaskPixels = null;
+let placementGridData = null;
 let towerImages = {};
 let enemyImages = {};
 let effectImages = {};
@@ -65,6 +67,8 @@ let dragStartedInCommandDeck = false;
 let commandDeckDragHasLeft = false;
 let lastCanvasPointer = { x: canvas.width / 2, y: canvas.height / 2 };
 let placementPreview = null;
+let placementGridCache = null;
+let placementGridCacheKey = '';
 let dragTooltip = null;
 let transparentDragImage = null;
 let dragTooltipEl = null;
@@ -85,6 +89,8 @@ let speedTestUnlocked = false;
 let speedTestActive = false;
 let activeShopInfoType = null;
 let latestSettleNetGold = 0;
+let displayedGoldOverride = null;
+let goldCountTweenRaf = null;
 const SETTLEMENT_COIN_SHEET = './assets/effects/settlement_coin_fly_sheet.png';
 const NORMAL_BATTLE_SPEEDS = [1, 2];
 const MAX_LOGIC_STEP = 1 / 60;
@@ -135,13 +141,23 @@ function showWaveSettlePanel(waveNumber, stats, bossReady = false) {
   if (!waveSettlePanelEl || !waveSettleContentEl) return;
   const net = stats.killGold + stats.mineGold + stats.rewardGold - stats.leakPenalty;
   latestSettleNetGold = Math.max(0, net);
+  if (latestSettleNetGold > 0 && !hasInfiniteGold()) {
+    displayedGoldOverride = Math.max(0, game.gold - latestSettleNetGold);
+    renderGoldHud();
+  } else {
+    displayedGoldOverride = null;
+  }
+  const moneyValue = (value) => `
+    <strong class="settle-money ${value < 0 ? 'negative' : 'positive'}">
+      <span class="settle-mini-coin" aria-hidden="true"></span><span>${value >= 0 ? '+' : ''}${value}</span>
+    </strong>`;
   waveSettleContentEl.innerHTML = `
     <div class="settle-row"><span>第 ${waveNumber} 波</span><strong>完成</strong></div>
-    <div class="settle-row"><span>击杀获得</span><strong>+${stats.killGold}</strong></div>
-    <div class="settle-row"><span>金矿产出</span><strong>+${stats.mineGold}</strong></div>
-    <div class="settle-row"><span>通关奖励</span><strong>+${stats.rewardGold}</strong></div>
-    <div class="settle-row"><span>漏怪扣除</span><strong>-${stats.leakPenalty}</strong></div>
-    <div class="settle-row total"><span>本波净收益</span><strong>${net >= 0 ? '+' : ''}${net}</strong></div>
+    <div class="settle-row"><span>击杀获得</span>${moneyValue(stats.killGold)}</div>
+    <div class="settle-row"><span>金矿产出</span>${moneyValue(stats.mineGold)}</div>
+    <div class="settle-row"><span>通关奖励</span>${moneyValue(stats.rewardGold)}</div>
+    <div class="settle-row"><span>漏怪扣除</span>${moneyValue(-stats.leakPenalty)}</div>
+    <div class="settle-row total"><span>本波净收益</span>${moneyValue(net)}</div>
     <p class="settle-tip">${bossReady ? '可以先调整建筑布置，确认后挑战 BOSS。' : '可以重新调整建筑布置，确认后开始下一波。'}</p>
   `;
   waveSettlePanelEl.hidden = false;
@@ -155,9 +171,48 @@ function hideWaveSettlePanel() {
   const source = sourceRect && sourceRect.width > 0 && sourceRect.height > 0
     ? { x: sourceRect.left + sourceRect.width / 2, y: sourceRect.top + sourceRect.height / 2 - Math.max(32, sourceRect.height * 0.16) }
     : { x: window.innerWidth / 2, y: window.innerHeight * 0.42 };
+  const settleAmount = latestSettleNetGold;
   if (waveSettlePanelEl) waveSettlePanelEl.hidden = true;
-  if (shouldFlyCoins) playSettlementCoinFly(latestSettleNetGold, source);
+  if (shouldFlyCoins) playSettlementCoinFly(settleAmount, source);
   latestSettleNetGold = 0;
+}
+
+function renderGoldHud() {
+  if (!goldHudEl) return;
+  const shown = displayedGoldOverride === null || displayedGoldOverride === undefined ? goldText() : String(Math.max(0, Math.floor(displayedGoldOverride)));
+  let coinIconEl = goldHudEl.querySelector('.coin-icon');
+  let coinTextEl = goldHudEl.querySelector('.coin-text');
+  if (!coinIconEl || !coinTextEl) {
+    goldHudEl.innerHTML = '<span class="coin-icon" aria-hidden="true"><span class="coin-icon-shake-layer"></span></span><span class="coin-text"></span>';
+    coinIconEl = goldHudEl.querySelector('.coin-icon');
+    coinTextEl = goldHudEl.querySelector('.coin-text');
+  }
+  if (coinTextEl) coinTextEl.textContent = `X ${shown}`;
+}
+
+function animateGoldCountDuringCoinFly(amount, firstArrival, lastArrival) {
+  if (!goldHudEl || !Number.isFinite(amount) || amount <= 0 || hasInfiniteGold()) return;
+  const endGold = game.gold;
+  const startGold = Math.max(0, endGold - Math.floor(amount));
+  const duration = Math.max(260, lastArrival - firstArrival);
+  const born = performance.now();
+  if (goldCountTweenRaf) cancelAnimationFrame(goldCountTweenRaf);
+  displayedGoldOverride = startGold;
+  renderGoldHud();
+  function tick(now) {
+    const t = Math.max(0, Math.min(1, (now - born) / duration));
+    const eased = 1 - Math.pow(1 - t, 2.2);
+    displayedGoldOverride = Math.round(startGold + (endGold - startGold) * eased);
+    renderGoldHud();
+    if (t < 1) {
+      goldCountTweenRaf = requestAnimationFrame(tick);
+    } else {
+      displayedGoldOverride = null;
+      goldCountTweenRaf = null;
+      renderGoldHud();
+    }
+  }
+  goldCountTweenRaf = requestAnimationFrame(tick);
 }
 
 function playSettlementCoinFly(amount, sourceOverride = null) {
@@ -185,6 +240,7 @@ function playSettlementCoinFly(amount, sourceOverride = null) {
   const firstArrival = Math.max(0, Math.min(...arrivals));
   const lastArrival = Math.max(...arrivals);
   goldHudEl._coinShakeDelayTimer = window.setTimeout(() => {
+    animateGoldCountDuringCoinFly(amount, firstArrival, lastArrival);
     goldHudEl.classList.add('coin-collect-shake');
     goldHudEl._coinShakeTimer = window.setTimeout(() => goldHudEl.classList.remove('coin-collect-shake'), Math.max(180, lastArrival - firstArrival + 220));
   }, firstArrival);
@@ -262,8 +318,7 @@ const CONFIG_FILES = [
 const ASSET_VERSION = '20260602-tower-top-anchor-v2';
 
 function loadUiAnchorDebugTuneFromStorage(defaultTune) {
-  // GitHub 发布包不读取本机 demo 调试缓存，避免网页端被旧 localStorage 锚点污染。
-  return defaultTune;
+  if (!UI_ANCHOR_DEBUG) return defaultTune;
   try {
     const raw = localStorage.getItem('pocketDefense.uiAnchorDebugTune');
     if (!raw) return defaultTune;
@@ -412,8 +467,7 @@ const level02PortalDebugTune = { x: 20, y: 14, scale: 1.06, scaleX: 0.84, scaleY
 const uiAnchorDebugTune = loadUiAnchorDebugTuneFromStorage({
   active: 'gold',
   gold: { cx: 78, cy: 94, icon: 106 },
-  // GitHub 网页端专用：开战按钮按底部背板右侧圆形槽位重调，避免沿用 demo 本地缓存。
-  start: { cx: 104, cy: 95, size: 122 }
+  start: { cx: 98, cy: 90, size: 138 }
 });
 applyUiAnchorDebugStyles();
 
@@ -432,6 +486,26 @@ function loadImage(src) {
   });
 }
 
+function buildRoadMaskPixelCache() {
+  roadMaskPixels = null;
+  if (!roadMaskCtx) return;
+  const { data } = roadMaskCtx.getImageData(0, 0, canvas.width, canvas.height);
+  const pixels = new Uint8Array(canvas.width * canvas.height);
+  for (let i = 0, p = 0; i < data.length; i += 4, p += 1) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    const a = data[i + 3];
+    if (a < 20) continue;
+    const whiteRoad = r >= 150 && g >= 150 && b >= 150;
+    const redCenterline = r >= 120 && r > g * 1.35 && r > b * 1.35;
+    const blueStart = b >= 120 && b > r * 1.25 && b > g * 1.25;
+    const yellowEnd = r >= 150 && g >= 130 && b <= 130;
+    pixels[p] = (whiteRoad || redCenterline || blueStart || yellowEnd) ? 1 : 0;
+  }
+  roadMaskPixels = pixels;
+}
+
 async function loadActiveMap(mapId) {
   const order = mapsCfg.levelOrder?.length ? mapsCfg.levelOrder : Object.keys(mapsCfg.maps || {});
   activeMapId = mapId || mapsCfg.activeMap || order[0];
@@ -446,6 +520,8 @@ async function loadActiveMap(mapId) {
   roadMaskCanvas.height = canvas.height;
   roadMaskCtx = roadMaskCanvas.getContext('2d', { willReadFrequently: true });
   roadMaskCtx.drawImage(roadMaskImage, 0, 0, canvas.width, canvas.height);
+  buildRoadMaskPixelCache();
+  buildPlacementGridData();
   cfg.game.path = activeMap.enemyPath;
 }
 
@@ -623,6 +699,7 @@ function newGame(options = {}) {
   syncLevelSelect();
   pendingBuild = null;
   hideTowerActionMenu();
+  // 地形逻辑格只在关卡加载时重建；建筑动态占用实时查 allTowerSlots()，不用让每次建造/移动都清缓存。
   setMessage('准备阶段：从底部道具栏拖拽防御塔到地图空地建造；不能重叠、不能压到道路。');
   renderSide();
 }
@@ -642,16 +719,10 @@ function distancePointToSegment(px, py, ax, ay, bx, by) {
 }
 
 function isRoadPixel(x, y) {
-  if (!roadMaskCtx) return false;
+  if (!roadMaskPixels) return false;
   const px = Math.max(0, Math.min(canvas.width - 1, Math.round(x)));
   const py = Math.max(0, Math.min(canvas.height - 1, Math.round(y)));
-  const [r, g, b, a] = roadMaskCtx.getImageData(px, py, 1, 1).data;
-  if (a < 20) return false;
-  const whiteRoad = r >= 150 && g >= 150 && b >= 150;
-  const redCenterline = r >= 120 && r > g * 1.35 && r > b * 1.35;
-  const blueStart = b >= 120 && b > r * 1.25 && b > g * 1.25;
-  const yellowEnd = r >= 150 && g >= 130 && b <= 130;
-  return whiteRoad || redCenterline || blueStart || yellowEnd;
+  return roadMaskPixels[py * canvas.width + px] === 1;
 }
 
 function roadOverlapRatio(x, y, radius) {
@@ -665,6 +736,48 @@ function roadOverlapRatio(x, y, radius) {
     if (isRoadPixel(x + dx, y + dy)) hits += 1;
   }
   return hits / samples.length;
+}
+
+function placementFootprintForItem(item = null) {
+  const type = item?.type || pendingBuild?.type || 'light';
+  const isMine = type === 'mine';
+  const { tileW, tileH } = placementGridMetrics();
+  // 固定格子占地：range_a = 普通塔 2x2；range_b = 金矿 3x3。
+  // 后续如果有大建筑，可以继续扩展 range_c = 4x4。
+  const size = isMine ? 3 : 2;
+  return {
+    range: isMine ? 'range_b' : 'range_a',
+    cols: size,
+    rows: size,
+    rx: tileW * size * 0.5,
+    ry: tileH * size * 0.5,
+    offsetX: 0,
+    offsetY: isMine ? -18 : -8
+  };
+}
+
+function isPointInPlacementFootprint(dx, dy, fp) {
+  const { tileW, tileH } = placementGridMetrics();
+  const lx = dx - (fp.offsetX || 0);
+  const ly = dy - (fp.offsetY || 0);
+  const a = lx / tileW + ly / tileH;
+  const b = ly / tileH - lx / tileW;
+  return Math.abs(a) <= fp.cols / 2 && Math.abs(b) <= fp.rows / 2;
+}
+
+function roadOverlapInFootprint(x, y, item = null) {
+  const fp = placementFootprintForItem(item);
+  const { tileW, tileH } = placementGridMetrics();
+  const step = 6;
+  const rx = tileW * fp.cols * 0.5;
+  const ry = tileH * fp.rows * 0.5;
+  for (let dy = -ry; dy <= ry; dy += step) {
+    for (let dx = -rx; dx <= rx; dx += step) {
+      if (!isPointInPlacementFootprint(dx, dy, fp)) continue;
+      if (isRoadPixel(x + dx, y + dy)) return true;
+    }
+  }
+  return false;
 }
 
 function isInBottomBuildBlockByClient(clientX, clientY) {
@@ -685,21 +798,185 @@ function setShopDragCancelUi(active, over = false) {
   shopCancelZoneEl?.classList.toggle('is-over', !!over);
 }
 
-function canCreateTowerSlot(x, y, ignoreSlotId = null) {
-  if (isInBottomBuildBlockByCanvasY(y)) {
-    return { ok: false, reason: '底部商店区域不能放置建筑。' };
-  }
-  if (x < 55 || x > canvas.width - 55 || y < 55 || y > canvas.height - 55) {
-    return { ok: false, reason: '太靠近地图边缘，放不下炮台。' };
-  }
-  for (const slot of allTowerSlots()) {
-    if (slot.id === ignoreSlotId) continue;
-    if (Math.hypot(slot.x - x, slot.y - y) < 72) {
-      return { ok: false, reason: '离已有炮台太近，不能重叠放置。' };
+function placementGridCellSize() {
+  return 16;
+}
+
+function placementGridMetrics() {
+  const cell = placementGridCellSize();
+  return {
+    cell,
+    tileW: cell * 2,
+    tileH: cell,
+    originX: canvas.width * 0.5,
+    originY: 48
+  };
+}
+
+function placementGridCoordFromPoint(x, y) {
+  const { tileW, tileH, originX, originY } = placementGridMetrics();
+  const dx = x - originX;
+  const dy = y - originY;
+  return {
+    a: Math.round(dx / tileW + dy / tileH),
+    b: Math.round(dy / tileH - dx / tileW)
+  };
+}
+
+function placementGridPointFromCoord(a, b) {
+  const { tileW, tileH, originX, originY } = placementGridMetrics();
+  return {
+    x: originX + (a - b) * tileW * 0.5,
+    y: originY + (a + b) * tileH * 0.5
+  };
+}
+
+function placementGridKey(a, b) {
+  return `${a},${b}`;
+}
+
+function itemPlacementRangeKey(item = null) {
+  return placementFootprintForItem(item).range;
+}
+
+function buildPlacementGridData() {
+  const { tileW, tileH } = placementGridMetrics();
+  const margin = Math.ceil(Math.max(canvas.width / tileW, canvas.height / tileH)) + 8;
+  const cells = [];
+  const terrain = { range_a: new Map(), range_b: new Map() };
+  const terrainCells = { range_a: [], range_b: [] };
+  for (let a = -margin; a <= margin * 2; a += 1) {
+    for (let b = -margin; b <= margin * 2; b += 1) {
+      const anchor = placementGridPointFromCoord(a, b);
+      const key = placementGridKey(a, b);
+      cells.push({ a, b, x: anchor.x, y: anchor.y, key });
+      for (const range of ['range_a', 'range_b']) {
+        const sampleItem = range === 'range_b' ? { type: 'mine', level: 1 } : { type: 'light', level: 1 };
+        const fp = placementFootprintForItem(sampleItem);
+        const towerX = anchor.x - (fp.offsetX || 0);
+        const towerY = anchor.y - (fp.offsetY || 0);
+        if (towerX < 48 || towerX > canvas.width - 48 || towerY < 48 || towerY > canvas.height - 48) continue;
+        const ok = isTerrainBuildableAt(towerX, towerY, sampleItem);
+        terrain[range].set(key, ok);
+        terrainCells[range].push({ a, b, key, anchorX: anchor.x, anchorY: anchor.y, towerX, towerY, ok });
+      }
     }
   }
-  if (roadOverlapRatio(x, y, 30) > 0) {
+  placementGridData = { cells, terrain, terrainCells };
+}
+
+function isTerrainBuildableAt(x, y, item = null) {
+  if (isInBottomBuildBlockByCanvasY(y)) return false;
+  if (x < 55 || x > canvas.width - 55 || y < 55 || y > canvas.height - 55) return false;
+  return !roadOverlapInFootprint(x, y, item);
+}
+
+function placementTerrainAllows(x, y, item = null) {
+  if (!placementGridData) buildPlacementGridData();
+  const fp = placementFootprintForItem(item);
+  const coord = placementGridCoordFromPoint(x + (fp.offsetX || 0), y + (fp.offsetY || 0));
+  const key = placementGridKey(coord.a, coord.b);
+  const range = itemPlacementRangeKey(item);
+  return placementGridData?.terrain?.[range]?.get(key) === true;
+}
+
+function footprintIndexOffsets(size) {
+  if (size <= 1) return [0];
+  const start = -Math.floor((size - 1) / 2);
+  return Array.from({ length: size }, (_, index) => start + index);
+}
+
+function footprintGridEdgeBoundsAt(x, y, item = null) {
+  const cells = footprintGridCellsAt(x, y, item);
+  if (!cells.length) return null;
+  let minA = Infinity;
+  let maxA = -Infinity;
+  let minB = Infinity;
+  let maxB = -Infinity;
+  for (const cell of cells) {
+    minA = Math.min(minA, cell.a - 0.5);
+    maxA = Math.max(maxA, cell.a + 0.5);
+    minB = Math.min(minB, cell.b - 0.5);
+    maxB = Math.max(maxB, cell.b + 0.5);
+  }
+  return { minA, maxA, minB, maxB };
+}
+
+function footprintGridCellsAt(x, y, item = null) {
+  const fp = placementFootprintForItem(item);
+  const coord = placementGridCoordFromPoint(x + (fp.offsetX || 0), y + (fp.offsetY || 0));
+  const cells = [];
+  const aOffsets = footprintIndexOffsets(fp.cols);
+  const bOffsets = footprintIndexOffsets(fp.rows);
+  for (const da of aOffsets) {
+    for (const db of bOffsets) {
+      const a = coord.a + da;
+      const b = coord.b + db;
+      const p = placementGridPointFromCoord(a, b);
+      cells.push({ a, b, key: placementGridKey(a, b), x: p.x, y: p.y });
+    }
+  }
+  return cells;
+}
+
+function footprintGridBoundsAt(x, y, item = null) {
+  const fp = placementFootprintForItem(item);
+  const coord = placementGridCoordFromPoint(x + (fp.offsetX || 0), y + (fp.offsetY || 0));
+  return {
+    a: coord.a,
+    b: coord.b,
+    minA: coord.a - fp.cols / 2,
+    maxA: coord.a + fp.cols / 2,
+    minB: coord.b - fp.rows / 2,
+    maxB: coord.b + fp.rows / 2,
+    cols: fp.cols,
+    rows: fp.rows
+  };
+}
+
+function footprintsOverlap(x1, y1, item1, x2, y2, item2, marginCells = 0) {
+  const a = footprintGridEdgeBoundsAt(x1, y1, item1) || footprintGridBoundsAt(x1, y1, item1);
+  const b = footprintGridEdgeBoundsAt(x2, y2, item2) || footprintGridBoundsAt(x2, y2, item2);
+  const overlapA = a.minA - marginCells < b.maxA && a.maxA + marginCells > b.minA;
+  const overlapB = a.minB - marginCells < b.maxB && a.maxB + marginCells > b.minB;
+  return overlapA && overlapB;
+}
+
+function placementSpacingMarginCells() {
+  return 2;
+}
+
+function placementOverlapsTower(x, y, ignoreSlotId = null, item = null) {
+  for (const slot of allTowerSlots()) {
+    if (slot.id === ignoreSlotId) continue;
+    const tower = game?.deployed?.[slot.id];
+    if (!tower) continue;
+    if (footprintsOverlap(x, y, item, slot.x, slot.y, tower, placementSpacingMarginCells())) return true;
+  }
+  return false;
+}
+
+function snapPlacementPoint(x, y, item = null) {
+  const fp = placementFootprintForItem(item);
+  const coord = placementGridCoordFromPoint(x + (fp.offsetX || 0), y + (fp.offsetY || 0));
+  const p = placementGridPointFromCoord(coord.a, coord.b);
+  return {
+    x: Math.max(48, Math.min(canvas.width - 48, p.x - (fp.offsetX || 0))),
+    y: Math.max(48, Math.min(canvas.height - 48, p.y - (fp.offsetY || 0))),
+    anchorX: p.x,
+    anchorY: p.y
+  };
+}
+
+function canCreateTowerSlot(x, y, ignoreSlotId = null, itemOverride = null, options = {}) {
+  const footprintItem = itemOverride || pendingBuild?.item || (dragging ? getItemAt(dragging.source) : null) || placementPreview?.item || null;
+  if (!placementTerrainAllows(x, y, footprintItem)) {
+    if (isInBottomBuildBlockByCanvasY(y)) return { ok: false, reason: '底部商店区域不能放置建筑。' };
+    if (x < 55 || x > canvas.width - 55 || y < 55 || y > canvas.height - 55) return { ok: false, reason: '太靠近地图边缘，放不下炮台。' };
     return { ok: false, reason: '不能放在道路 mask 上。' };
+  }
+  if (!options.skipTowerOverlap && placementOverlapsTower(x, y, ignoreSlotId, footprintItem)) {
+    return { ok: false, reason: '离已有炮台太近，不能重叠放置。' };
   }
   return { ok: true };
 }
@@ -712,6 +989,7 @@ function createCustomTowerSlot(x, y) {
   const id = `tower-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   game.customTowerSlots.push({ id, x, y, custom: true });
   game.deployed[id] = null;
+  // 地形逻辑格只在关卡加载时重建；建筑动态占用实时查 allTowerSlots()，不用让每次建造/移动都清缓存。
   return id;
 }
 
@@ -720,6 +998,7 @@ function cleanupEmptyTowerSlots() {
   for (const slotId of Object.keys(game.deployed)) {
     if (!game.customTowerSlots.some(slot => slot.id === slotId)) delete game.deployed[slotId];
   }
+  // 地形逻辑格只在关卡加载时重建；建筑动态占用实时查 allTowerSlots()，不用让每次建造/移动都清缓存。
 }
 
 function setMessage(text) {
@@ -884,6 +1163,7 @@ function setItemAt(ref, item) {
   if (ref.area === 'inventory') game.inventory[ref.index] = item;
   if (ref.area === 'deployed') {
     game.deployed[ref.slotId] = item;
+    // 地形逻辑格只在关卡加载时重建；建筑动态占用实时查 allTowerSlots()，不用让每次建造/移动都清缓存。
     if (!item) cleanupEmptyTowerSlots();
   }
 }
@@ -1336,11 +1616,17 @@ function updatePlacementPreview(x, y, targetSlot = null) {
   const targetRef = targetSlot ? { area: 'deployed', slotId: targetSlot.id } : null;
   const mergePreview = dragging && targetRef ? mergePreviewForRef(targetRef) : null;
   const ignoreSlotId = dragging?.source?.area === 'deployed' ? dragging.source.slotId : null;
-  const isMovingExisting = !!(dragging?.started && dragging.source?.area === 'deployed' && !mergePreview);
-  const placement = mergePreview ? { ok: mergePreview.ok, reason: mergePreview.text } : canCreateTowerSlot(x, y, isMovingExisting ? null : ignoreSlotId);
+  const snap = mergePreview ? { x, y, anchorX: x, anchorY: y } : snapPlacementPoint(x, y, item);
+  const placement = mergePreview ? { ok: mergePreview.ok, reason: mergePreview.text } : canCreateTowerSlot(snap.x, snap.y, ignoreSlotId, item);
   placementPreview = {
     x,
     y,
+    snapX: snap.x,
+    snapY: snap.y,
+    anchorX: snap.anchorX ?? snap.x,
+    anchorY: snap.anchorY ?? snap.y,
+    rawX: x,
+    rawY: y,
     ok: placement.ok,
     reason: mergePreview ? mergePreview.text : (placement.reason || ''),
     mergePreview,
@@ -1354,10 +1640,17 @@ function updatePendingBuildPreview(x, y) {
     placementPreview = null;
     return;
   }
-  const placement = canCreateTowerSlot(x, y, null);
+  const snap = snapPlacementPoint(x, y, pendingBuild.item);
+  const placement = canCreateTowerSlot(snap.x, snap.y, null, pendingBuild.item);
   placementPreview = {
     x,
     y,
+    snapX: snap.x,
+    snapY: snap.y,
+    anchorX: snap.anchorX ?? snap.x,
+    anchorY: snap.anchorY ?? snap.y,
+    rawX: x,
+    rawY: y,
     ok: placement.ok,
     reason: placement.reason || '',
     mergePreview: null,
@@ -1376,10 +1669,13 @@ function placePendingBuild(event) {
     renderSide();
     return true;
   }
-  const { x, y } = canvasPoint(event);
+  const { x: rawX, y: rawY } = canvasPoint(event);
+  const { x, y } = snapPlacementPoint(rawX, rawY, pendingBuild.item);
   const def = towersCfg[pendingBuild.type];
-  const placement = canCreateTowerSlot(x, y, null);
-  if (!placement.ok) {
+  const placement = canCreateTowerSlot(x, y, null, pendingBuild.item);
+  const previewBlocksPlacement = placementPreview && !placementPreview.ok && Math.hypot((placementPreview.snapX ?? x) - x, (placementPreview.snapY ?? y) - y) < 8;
+  if (!placement.ok || previewBlocksPlacement) {
+    const reason = placement.reason || placementPreview?.reason || '当前位置不可放置';
     updatePendingBuildPreview(x, y);
     pendingBuild = null;
     shopDragging = null;
@@ -1387,7 +1683,7 @@ function placePendingBuild(event) {
     setShopDragCancelUi(false);
     removeShopBuildGhost();
     document.body.classList.remove('dragging');
-    setMessage(`${placement.reason}，建造失败，请重新从商店拖拽。`);
+    setMessage(`${reason}，建造失败，请重新从商店拖拽。`);
     renderSide();
     return true;
   }
@@ -1404,6 +1700,7 @@ function placePendingBuild(event) {
   spendGold(def.cost);
   const slotId = createCustomTowerSlot(x, y);
   game.deployed[slotId] = pendingBuild.item;
+  // 地形逻辑格只在关卡加载时重建；建筑动态占用实时查 allTowerSlots()，不用让每次建造/移动都清缓存。
   game.selected = { area: 'deployed', slotId };
   setMessage(`已建造 ${towerName(pendingBuild.item)}。`);
   pendingBuild = null;
@@ -1438,7 +1735,6 @@ function beginPointerDragFromCanvas(event, slotId) {
   };
   game.selected = { area: 'deployed', slotId };
   hoveredSlotId = slotId;
-  renderSide();
 }
 
 function moveDraggedToInventory(target = null, event = null) {
@@ -1470,23 +1766,27 @@ function deployDraggedToMap(x, y, targetSlot = null, event = null) {
   }
 
   const movingExistingSlotId = source.area === 'deployed' ? source.slotId : null;
-  const placement = canCreateTowerSlot(x, y, movingExistingSlotId);
-  if (!placement.ok) {
-    setMessage(placement.reason);
+  const point = targetSlot ? { x, y } : snapPlacementPoint(x, y, moving);
+  const placement = canCreateTowerSlot(point.x, point.y, movingExistingSlotId, moving);
+  const previewBlocksPlacement = placementPreview && !placementPreview.ok && !placementPreview.mergePreview && Math.hypot((placementPreview.snapX ?? point.x) - point.x, (placementPreview.snapY ?? point.y) - point.y) < 8;
+  if (!placement.ok || previewBlocksPlacement) {
+    setMessage(placement.reason || placementPreview?.reason || '当前位置不可放置');
     return false;
   }
 
   if (source.area === 'deployed') {
     const slot = game.customTowerSlots.find(item => item.id === source.slotId);
     if (!slot) return false;
-    slot.x = x;
-    slot.y = y;
+    slot.x = point.x;
+    slot.y = point.y;
+    // 地形逻辑格只在关卡加载时重建；建筑动态占用实时查 allTowerSlots()，不用让每次建造/移动都清缓存。
     game.selected = source;
     setMessage(`已调整 ${towerName(moving)} 的位置。`);
   } else {
-    const slotId = createCustomTowerSlot(x, y);
+    const slotId = createCustomTowerSlot(point.x, point.y);
     setItemAt(source, null);
     game.deployed[slotId] = moving;
+    // 地形逻辑格只在关卡加载时重建；建筑动态占用实时查 allTowerSlots()，不用让每次建造/移动都清缓存。
     game.selected = { area: 'deployed', slotId };
     setMessage(`已自由放置 ${towerName(moving)}。`);
   }
@@ -1562,7 +1862,7 @@ function showTowerActionMenu(slotId, event = null) {
   const upgradeCost = upgradeDirectCost(item);
   const canUpgrade = item.level < 3;
   const upgradeOk = canUpgrade && canAfford(upgradeCost);
-  const upgradeText = canUpgrade ? (upgradeOk ? upgradeCost : `${upgradeCost - game.gold}`) : 'MAX';
+  const upgradeText = canUpgrade ? upgradeCost : 'MAX';
   towerActionMenuEl.dataset.slotId = slotId;
   towerActionMenuEl.innerHTML = `
     <button class="tower-menu-btn sell" type="button" data-action="sell"><span class="mini-coin" aria-hidden="true"></span><span class="tower-menu-price">${sellValue}</span></button>
@@ -2420,9 +2720,8 @@ function handleInventoryPointerMove(event) {
   placementPreview = null;
 }
 
-function renderGoldHud() {
-  if (!goldHudEl) return;
-  goldHudEl.innerHTML = `<span class="coin-icon" aria-hidden="true"></span><span class="coin-text">X ${goldText()}</span>`;
+function renderGoldHudLegacyRemoved() {
+  return;
 }
 
 function hideShopInfoPanel() {
@@ -2597,7 +2896,9 @@ function draw() {
   drawBackground();
   if (game.phase === 'prep') drawPath();
   drawWorldObjects();
+  drawPlacementGrid();
   drawPlacementPreview();
+  drawPlacementActiveFootprintOverlay();
   drawProjectiles();
   drawTopBars();
   drawFloating();
@@ -2752,9 +3053,268 @@ function drawGemIdleEffect(item, rect, alpha = 1) {
   ctx.restore();
 }
 
+function drawPlacementDiamond(g, centerX, centerY, tileW, tileH, fillStyle, strokeStyle, lineWidth = 1) {
+  g.beginPath();
+  g.moveTo(centerX, centerY - tileH * 0.5);
+  g.lineTo(centerX + tileW * 0.5, centerY);
+  g.lineTo(centerX, centerY + tileH * 0.5);
+  g.lineTo(centerX - tileW * 0.5, centerY);
+  g.closePath();
+  if (fillStyle) {
+    g.fillStyle = fillStyle;
+    g.fill();
+  }
+  if (strokeStyle) {
+    g.strokeStyle = strokeStyle;
+    g.lineWidth = lineWidth;
+    g.stroke();
+  }
+}
+
+function forEachPlacementGridCenter(minX, maxX, minY, maxY, visitor) {
+  const { tileW, tileH, originX, originY } = placementGridMetrics();
+  const margin = Math.ceil(Math.max(canvas.width / tileW, canvas.height / tileH)) + 8;
+  const minA = -margin;
+  const maxA = margin * 2;
+  const minB = -margin;
+  const maxB = margin * 2;
+  for (let a = minA; a <= maxA; a++) {
+    for (let b = minB; b <= maxB; b++) {
+      const x = originX + (a - b) * tileW * 0.5;
+      const y = originY + (a + b) * tileH * 0.5;
+      if (x < minX || x > maxX || y < minY || y > maxY) continue;
+      visitor(x, y, a, b);
+    }
+  }
+}
+
+function placementGridCacheSignature(item, ignoreSlotId) {
+  return [
+    activeMapId || '',
+    itemPlacementRangeKey(item),
+    canvas.width,
+    canvas.height,
+    placementGridCellSize(),
+    'buildable-footprint-cells-red-green-overlay-v1'
+  ].join('~');
+}
+
+function drawPlacementFootprintShape(g, towerX, towerY, item, fillStyle, strokeStyle, lineWidth = 1) {
+  const bounds = footprintGridEdgeBoundsAt(towerX, towerY, item) || footprintGridBoundsAt(towerX, towerY, item);
+  const top = placementGridPointFromCoord(bounds.minA, bounds.minB);
+  const right = placementGridPointFromCoord(bounds.maxA, bounds.minB);
+  const bottom = placementGridPointFromCoord(bounds.maxA, bounds.maxB);
+  const left = placementGridPointFromCoord(bounds.minA, bounds.maxB);
+  g.beginPath();
+  g.moveTo(top.x, top.y);
+  g.lineTo(right.x, right.y);
+  g.lineTo(bottom.x, bottom.y);
+  g.lineTo(left.x, left.y);
+  g.closePath();
+  if (fillStyle) {
+    g.fillStyle = fillStyle;
+    g.fill();
+  }
+  if (strokeStyle) {
+    g.strokeStyle = strokeStyle;
+    g.lineWidth = lineWidth;
+    g.stroke();
+  }
+}
+
+function getPlacementGridCache(item, ignoreSlotId, minX, maxX, minY, maxY, cell) {
+  const key = placementGridCacheSignature(item, ignoreSlotId);
+  if (placementGridCache && placementGridCacheKey === key) return placementGridCache;
+  if (!placementGridData) buildPlacementGridData();
+
+  const off = document.createElement('canvas');
+  off.width = canvas.width;
+  off.height = canvas.height;
+  const g = off.getContext('2d');
+  const { tileW, tileH } = placementGridMetrics();
+  const range = itemPlacementRangeKey(item);
+  const terrainCells = placementGridData?.terrainCells?.[range] || [];
+
+  // 玩家视角：整张地图直接显示红/绿单格，不做 footprint 大面积叠加，避免视觉过曝。
+  // 每个格子的颜色仍然代表“当前建筑放到这个格子中心时，完整 footprint 是否能落下”。
+  for (const cellData of terrainCells) {
+    drawPlacementDiamond(
+      g,
+      cellData.towerX,
+      cellData.towerY,
+      tileW,
+      tileH,
+      cellData.ok ? 'rgba(34, 197, 94, 0.115)' : 'rgba(239, 68, 68, 0.135)',
+      cellData.ok ? 'rgba(210, 255, 225, 0.24)' : 'rgba(255, 218, 218, 0.28)',
+      0.7
+    );
+  }
+
+  placementGridCache = off;
+  placementGridCacheKey = key;
+  return placementGridCache;
+}
+
+function invalidatePlacementGridCache() {
+  placementGridCache = null;
+  placementGridCacheKey = '';
+}
+
+function warmPlacementGridCache() {
+  // 预热全图斜格缓存会造成关卡打开或首次交互卡顿，当前版本先禁用。
+}
+
+function drawPlacementLocalGrid(item, ignoreSlotId, centerX, centerY) {
+  const { tileW, tileH } = placementGridMetrics();
+  if (!placementGridData) buildPlacementGridData();
+  const minX = Math.max(48, centerX - 220);
+  const maxX = Math.min(canvas.width - 48, centerX + 220);
+  const minY = Math.max(48, centerY - 150);
+  const maxY = Math.min(canvas.height - 48, centerY + 150);
+  const terrain = placementGridData?.terrain?.[itemPlacementRangeKey(item)];
+  for (const cell of placementGridData?.cells || []) {
+    if (cell.x < minX || cell.x > maxX || cell.y < minY || cell.y > maxY) continue;
+    const terrainOk = terrain?.get(cell.key) === true;
+    const ok = terrainOk && !placementOverlapsTower(cell.x, cell.y, ignoreSlotId, item);
+    drawPlacementDiamond(
+      ctx,
+      cell.x,
+      cell.y,
+      tileW,
+      tileH,
+      ok ? 'rgba(21, 230, 104, 0.18)' : 'rgba(255, 58, 58, 0.2)',
+      ok ? 'rgba(180, 255, 205, 0.24)' : 'rgba(255, 205, 205, 0.28)',
+      0.8
+    );
+  }
+}
+
+function drawPlacementExactGrid(item, ignoreSlotId) {
+  if (!placementGridData) buildPlacementGridData();
+  const { tileW, tileH } = placementGridMetrics();
+  const range = itemPlacementRangeKey(item);
+  const terrainCells = placementGridData?.terrainCells?.[range] || [];
+  const displayCells = new Map();
+
+  // 关键：地图红绿不再表示“这个单格能不能当落点”，而是表示“当前建筑 footprint 覆盖到这里时是否可放”。
+  // 这样普通塔 2x2、金矿 3x3 的显示会和最终放置判定一致：能放的占地区域整块变绿，不能放才变红。
+  // 如果同一个格子被多个候选 footprint 覆盖，只要存在一个合法放置方案，就优先显示绿色，避免出现“红格上却能放”的误导。
+  for (const cellData of terrainCells) {
+    const placement = canCreateTowerSlot(cellData.towerX, cellData.towerY, ignoreSlotId, item);
+    const footprintCells = footprintGridCellsAt(cellData.towerX, cellData.towerY, item);
+    for (const fpCell of footprintCells) {
+      const previous = displayCells.get(fpCell.key);
+      if (previous?.ok) continue;
+      displayCells.set(fpCell.key, { ...fpCell, ok: !!placement.ok });
+    }
+  }
+
+  for (const cellData of displayCells.values()) {
+    drawPlacementDiamond(
+      ctx,
+      cellData.x,
+      cellData.y,
+      tileW,
+      tileH,
+      cellData.ok ? 'rgba(34, 197, 94, 0.105)' : 'rgba(239, 68, 68, 0.125)',
+      cellData.ok ? 'rgba(215, 255, 228, 0.23)' : 'rgba(255, 220, 220, 0.27)',
+      0.65
+    );
+  }
+}
+
+function drawPlacementOccupiedOverlay(item, ignoreSlotId) {
+  if (!placementGridData) buildPlacementGridData();
+  const { tileW, tileH } = placementGridMetrics();
+  const range = itemPlacementRangeKey(item);
+  const terrainCells = placementGridData?.terrainCells?.[range] || [];
+  for (const cellData of terrainCells) {
+    if (!cellData.ok) continue;
+    if (!placementOverlapsTower(cellData.towerX, cellData.towerY, ignoreSlotId, item)) continue;
+    drawPlacementDiamond(
+      ctx,
+      cellData.towerX,
+      cellData.towerY,
+      tileW,
+      tileH,
+      'rgba(239, 68, 68, 0.16)',
+      'rgba(255, 220, 220, 0.36)',
+      0.8
+    );
+  }
+}
+
+function drawPlacementFootprintCells(towerX, towerY, item, ok, cell, minX, minY) {
+  ctx.save();
+  const { tileW, tileH } = placementGridMetrics();
+  const cells = footprintGridCellsAt(towerX, towerY, item);
+  for (const fpCell of cells) {
+    drawPlacementDiamond(
+      ctx,
+      fpCell.x,
+      fpCell.y,
+      tileW,
+      tileH,
+      ok ? 'rgba(74, 222, 128, 0.24)' : 'rgba(248, 113, 113, 0.24)',
+      null,
+      0
+    );
+  }
+  drawPlacementFootprintShape(
+    ctx,
+    towerX,
+    towerY,
+    item,
+    null,
+    ok ? 'rgba(250, 255, 252, 1)' : 'rgba(255, 238, 238, 1)',
+    1.45
+  );
+  ctx.restore();
+}
+
+function drawPlacementActiveFootprintOverlay() {
+  if (!placementPreview || game.phase !== 'prep') return;
+  const item = placementPreview.item;
+  if (!item) return;
+  const px = placementPreview.snapX ?? placementPreview.x;
+  const py = placementPreview.snapY ?? placementPreview.y;
+  drawPlacementFootprintCells(px, py, item, placementPreview.ok, placementGridCellSize(), 48, 48);
+}
+
+function drawPlacementGrid() {
+  if (!placementPreview || game.phase !== 'prep') return;
+  const item = placementPreview.item;
+  if (!item) return;
+
+  const cell = placementGridCellSize();
+  const ignoreSlotId = dragging?.source?.area === 'deployed' ? dragging.source.slotId : null;
+  const minX = 48;
+  const maxX = canvas.width - 48;
+  const minY = 48;
+  const maxY = canvas.height - 48;
+
+  ctx.save();
+  // 直接用最终 canCreateTowerSlot 结果画红/绿格，保证显示和实际放置完全一致。
+  // 这一步只查预计算数组和已有建筑 footprint，不读 mask，不会回到旧卡顿模式。
+  drawPlacementExactGrid(item, ignoreSlotId);
+
+  const px = placementPreview.snapX ?? placementPreview.x;
+  const py = placementPreview.snapY ?? placementPreview.y;
+  const current = canCreateTowerSlot(px, py, ignoreSlotId, item);
+  // 当前拖拽位置只显示真实 footprint 外轮廓，不再额外画单格落点，避免用户误解“单格红绿”和“2x2/3x3占地”的关系。
+
+  // 显示真实塔底占用格子：使用塔最终落点坐标，不能使用内部 anchor，否则金矿等带 offset 的建筑会偏移/变得很怪。
+  drawPlacementFootprintCells(px, py, item, current.ok, cell, minX, minY);
+
+  // 已有建筑占用不再额外画红圈；最终是否可放由 footprint 高亮颜色表达。
+  ctx.restore();
+}
+
 function drawPlacementPreview() {
   if (!placementPreview || game.phase !== 'prep') return;
-  const { x, y, ok, item, reason, mergePreview } = placementPreview;
+  const { ok, item, reason, mergePreview } = placementPreview;
+  const x = placementPreview.snapX ?? placementPreview.x;
+  const y = placementPreview.snapY ?? placementPreview.y;
   const def = towersCfg[item.type];
   const stat = def.levels[item.level - 1];
 
@@ -2775,7 +3335,7 @@ function drawPlacementPreview() {
 
   // 地图区域必须绘制真实塔影，保证鼠标指向位置和最终落点一致；只有拖回商店取消区时改用顶层 DOM 小虚影避免被 UI 遮挡。
   if (!(pendingBuild && shopDragging?.started && reason === '拖回商店取消放置')) {
-    drawTowerSprite({ x: 0, y: 0 }, item, ok ? 0.55 : 0.34, false);
+    drawTowerSprite({ x: 0, y: 0 }, item, ok ? 0.50 : 0.30, false);
   }
 
   ctx.fillStyle = ok ? '#bbf7d0' : '#fecaca';
@@ -3576,21 +4136,24 @@ function drawOverlayText() {
     ctx.drawImage(panel, panelX, panelY, panelW, panelH);
     ctx.restore();
 
+    const contentCenterX = panelX + panelW * 0.5;
+    const titleY = panelY + panelH * 0.295;
+    const infoY = panelY + panelH * 0.435;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = '#fff7ed';
     ctx.strokeStyle = 'rgba(74, 21, 9, 0.82)';
     ctx.lineWidth = 7;
     ctx.font = '900 48px Microsoft YaHei, sans-serif';
-    ctx.strokeText('防守失败', canvas.width / 2, panelY + panelH * 0.42);
-    ctx.fillText('防守失败', canvas.width / 2, panelY + panelH * 0.42);
+    ctx.strokeText('防守失败', contentCenterX, titleY);
+    ctx.fillText('防守失败', contentCenterX, titleY);
     ctx.fillStyle = '#e5edf8';
     ctx.strokeStyle = 'rgba(2, 6, 23, 0.75)';
     ctx.lineWidth = 4;
     ctx.font = '800 20px Microsoft YaHei, sans-serif';
     const info = `最终分数：${game.score}   剩余基地血量：${game.hp}`;
-    ctx.strokeText(info, canvas.width / 2, panelY + panelH * 0.61);
-    ctx.fillText(info, canvas.width / 2, panelY + panelH * 0.61);
+    ctx.strokeText(info, contentCenterX, infoY);
+    ctx.fillText(info, contentCenterX, infoY);
     return;
   }
 
@@ -3663,7 +4226,24 @@ function towerSlotAtCanvasEvent(event, ignoreSlotId = null) {
 }
 
 function bestMergeSlotForDragged(event, radius = 86) {
-  return null;
+  if (!dragging || game.phase !== 'prep') return null;
+  const moving = getItemAt(dragging.source);
+  if (!moving) return null;
+  const ignoreSlotId = dragging.source?.area === 'deployed' ? dragging.source.slotId : null;
+  const { x, y } = canvasPoint(event);
+  const snap = snapPlacementPoint(x, y, moving);
+  const candidates = [];
+  for (const slot of allTowerSlots()) {
+    if (slot.id === ignoreSlotId) continue;
+    const tower = game.deployed?.[slot.id];
+    if (!tower) continue;
+    // 只有真正进入目标建筑的占地/一圈禁止间隔时，才认为是“替换/交换目标”。
+    // 间隔之外松手应当正常放在旁边，不再用旧的 64 像素半径误判成替换。
+    if (!footprintsOverlap(snap.x, snap.y, moving, slot.x, slot.y, tower, placementSpacingMarginCells())) continue;
+    candidates.push({ slot, dist: Math.hypot(slot.x - snap.x, slot.y - snap.y) });
+  }
+  candidates.sort((a, b) => a.dist - b.dist);
+  return candidates[0]?.slot || null;
 }
 
 function canvasClick(event) {
@@ -3837,10 +4417,11 @@ canvas.addEventListener('pointermove', event => {
   }
   event.preventDefault();
   hoveredSlotId = dragging.source?.slotId || null;
-  const targetSlot = bestMergeSlotForDragged(event) || slotAtCanvasEvent(event, dragging.source?.slotId || null, 64);
+  const targetSlot = bestMergeSlotForDragged(event);
   updatePlacementPreview(x, y, targetSlot);
   updateDragGhost(event);
-  const placement = targetSlot ? { ok: true } : canCreateTowerSlot(x, y, dragging.source?.slotId || null);
+  const snapped = snapPlacementPoint(x, y, getItemAt(dragging.source));
+  const placement = targetSlot ? { ok: true } : canCreateTowerSlot(snapped.x, snapped.y, dragging.source?.slotId || null, getItemAt(dragging.source));
   canvas.classList.toggle('drag-over', placement.ok);
 });
 
@@ -3855,7 +4436,7 @@ function finishPointerDrag(event) {
       moveDraggedToInventory(emptyInventoryRef(), event);
     } else {
       const { x, y } = canvasPoint(event);
-      const targetSlot = bestMergeSlotForDragged(event) || slotAtCanvasEvent(event, dragging.source?.slotId || null, 64);
+      const targetSlot = bestMergeSlotForDragged(event);
       deployDraggedToMap(x, y, targetSlot, event);
     }
   } else {
@@ -3891,7 +4472,7 @@ canvas.addEventListener('dragover', event => {
     return;
   }
   updateCommandDeckDragVisibility(event);
-  const slot = bestMergeSlotForDragged(event) || slotAtCanvasEvent(event, dragging?.source?.slotId || null, 64);
+  const slot = bestMergeSlotForDragged(event);
   hoveredSlotId = slot?.id || null;
   const { x, y } = canvasPoint(event);
   const mergePreview = slot ? mergePreviewForRef({ area: 'deployed', slotId: slot.id }) : null;
@@ -3908,7 +4489,7 @@ canvas.addEventListener('dragleave', () => {
 
 canvas.addEventListener('drop', event => {
   event.preventDefault();
-  const slot = bestMergeSlotForDragged(event) || slotAtCanvasEvent(event, dragging?.source?.slotId || null, 64);
+  const slot = bestMergeSlotForDragged(event);
   const { x, y } = canvasPoint(event);
   const handled = deployDraggedToMap(x, y, slot, event);
   if (!handled) clearDragVisuals();
@@ -3941,7 +4522,7 @@ window.addEventListener('pointermove', event => {
     placementPreview = null;
     return;
   }
-  const slot = bestMergeSlotForDragged(event) || slotAtCanvasEvent(event, dragging.source?.slotId || null, 64);
+  const slot = bestMergeSlotForDragged(event);
   hoveredSlotId = slot?.id || null;
   const { x, y } = canvasPoint(event);
   updatePlacementPreview(x, y, slot);
@@ -3972,7 +4553,7 @@ window.addEventListener('mousemove', event => {
     placementPreview = null;
     return;
   }
-  const slot = bestMergeSlotForDragged(event) || slotAtCanvasEvent(event, dragging.source?.slotId || null, 64);
+  const slot = bestMergeSlotForDragged(event);
   hoveredSlotId = slot?.id || null;
   const { x, y } = canvasPoint(event);
   updatePlacementPreview(x, y, slot);
@@ -4012,7 +4593,7 @@ function finishHtmlDrag(event) {
     dropToRef(inventoryTarget, event);
     return;
   }
-  const slot = bestMergeSlotForDragged(event) || slotAtCanvasEvent(event, dragging.source?.slotId || null, 64);
+  const slot = bestMergeSlotForDragged(event);
   const { x, y } = canvasPoint(event);
   const handled = deployDraggedToMap(x, y, slot, event);
   if (!handled) clearDragVisuals();

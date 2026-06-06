@@ -60,7 +60,7 @@
     "boss_snow_guardian": {
       "name": "冰晶雪人 Boss",
       "color": "#bae6fd",
-      "hp": 1232,
+      "hp": 1331,
       "speed": 38,
       "reward": 46,
       "baseDamage": 12,
@@ -68,7 +68,7 @@
       "radius": 30,
       "sprite": { "image": "./assets/enemies/boss_snow_guardian_walk_4x4.webp", "frameCols": 4, "frameRows": 4, "frames": 16, "fps": 8, "width": 212, "height": 212, "footY": 0.84 },
       "attackSprite": { "image": "./assets/enemies/boss_snow_guardian_attack.webp", "frameCols": 4, "frameRows": 4, "frames": 16, "fps": 12, "width": 230, "height": 230, "footY": 0.84 },
-      "towerAttack": { "name": "雪崩", "cooldown": 11, "initialDelay": 16, "duration": 1.1, "shakeDuration": 0.55, "shakeIntensity": 9, "towerHitEffect": "snowBossTowerHit", "towerHitEffectLead": 0.35 }
+      "towerAttack": { "name": "雪崩", "cooldown": 9, "initialDelay": 10, "duration": 1.1, "shakeDuration": 0.55, "shakeIntensity": 9, "towerHitEffect": "snowBossTowerHit", "towerHitEffectLead": 0.35 }
     }
   }
 }

@@ -2090,9 +2090,9 @@ body.ui-anchor-debug .bottom-unified-ui .start-wave-float {
 .shop-info-panel p {
   position: absolute;
   left: calc(var(--inner-left) + calc(124px * var(--stage-scale)));
-  top: calc(var(--inner-top) + calc(60px * var(--stage-scale)));
+  top: calc(var(--inner-top) + calc(42px * var(--stage-scale)));
   right: calc(var(--inner-right) + calc(6px * var(--stage-scale)));
-  height: calc(42px * var(--stage-scale));
+  height: calc(54px * var(--stage-scale));
   margin: 0;
   color: #fff1c7;
   font-size: calc(15px * var(--stage-scale));
@@ -2230,14 +2230,39 @@ body.ui-anchor-debug .bottom-unified-ui .start-wave-float {
 }
 .bottom-unified-ui .gold-hud.coin-collect-shake .coin-icon {
   transform-origin: 50% 50%;
-  animation: goldCollectShake 0.18s ease-in-out infinite;
+  animation: goldCoinIconCollectShake 0.18s ease-in-out infinite !important;
 }
-@keyframes goldCollectShake {
+@keyframes goldCoinIconCollectShake {
   0% { transform: scale(0.9) rotate(-2deg); }
   50% { transform: scale(1.1) rotate(2deg); }
   100% { transform: scale(0.9) rotate(-2deg); }
 }
+@keyframes goldCollectShake {
+  0% { transform: translate(-50%, -50%) scale(0.9) rotate(-2deg); }
+  50% { transform: translate(-50%, -50%) scale(1.1) rotate(2deg); }
+  100% { transform: translate(-50%, -50%) scale(0.9) rotate(-2deg); }
+}
 
+
+.bottom-unified-ui .gold-hud.coin-collect-shake {
+  animation: goldHudCollectShake 0.18s ease-in-out infinite;
+  transform-origin: 50% 50% !important;
+}
+@keyframes goldHudCollectShake {
+  0% { transform: translate(-50%, -50%) scale(0.9); }
+  50% { transform: translate(-50%, -50%) scale(1.1); }
+  100% { transform: translate(-50%, -50%) scale(0.9); }
+}
+
+.bottom-unified-ui .gold-hud.coin-collect-shake {
+  transform: translate(-50%, -50%) scale(1) !important;
+  animation-name: goldHudCollectShakeImportant;
+}
+@keyframes goldHudCollectShakeImportant {
+  0% { transform: translate(-50%, -50%) scale(0.9); }
+  50% { transform: translate(-50%, -50%) scale(1.1); }
+  100% { transform: translate(-50%, -50%) scale(0.9); }
+}
 
 /* 20260605: 底部 UI 以 bottom-unified-ui 为父节点的实测相对坐标
    来源：正确链接 v=20260603-open2 的实际 DOM 矩形。
@@ -2298,4 +2323,216 @@ body.is-fullscreen .bottom-unified-ui .start-wave-float {
   top: var(--start-center-y-p) !important;
   right: auto !important;
   bottom: auto !important;
+}
+
+/* 结算金币收集动画：金币 HUD 本体有 !important 定位 transform，所以只动画内部 coin-icon，避免定位规则覆盖动画 */
+.bottom-unified-ui .gold-hud.coin-collect-shake .coin-icon {
+  animation: goldCoinIconCollectShakeFinal 0.18s ease-in-out infinite !important;
+  transform-origin: 50% 50% !important;
+}
+@keyframes goldCoinIconCollectShakeFinal {
+  0% { transform: scale(0.9) rotate(-2deg); }
+  50% { transform: scale(1.1) rotate(2deg); }
+  100% { transform: scale(0.9) rotate(-2deg); }
+}
+
+/* 20260606: 文字性能优化——用描边替代大半径文字投影，降低多层 text-shadow 开销 */
+.level-select-panel span,
+.gold-badge,
+h2,
+.ghost,
+.small-danger,
+.shop-strip .shop-item-label,
+.gold-hud,
+.tower-menu-btn,
+.shop-cancel-zone,
+.shop-card.cant-afford .shop-item-cost,
+.shop-card.cant-afford .shop-item-name,
+.tower-menu-btn.upgrade.can-upgrade,
+.tower-menu-btn.upgrade.cant-upgrade,
+.settle-row,
+.settle-row strong,
+.shop-info-panel,
+.shop-info-panel * {
+  text-shadow: none !important;
+  -webkit-text-stroke-width: max(1.6px, calc(1.6px * var(--stage-scale, 1)));
+  paint-order: stroke fill;
+}
+
+.level-select-panel span,
+.gold-badge,
+h2,
+.ghost,
+.small-danger,
+.shop-strip .shop-item-label,
+.gold-hud,
+.shop-cancel-zone,
+.settle-row,
+.settle-row strong,
+.shop-info-panel,
+.shop-info-panel * {
+  -webkit-text-stroke-color: rgba(58, 34, 10, 0.92);
+}
+
+.tower-menu-btn,
+.tower-menu-btn.upgrade.can-upgrade {
+  -webkit-text-stroke-color: rgba(11, 68, 37, 0.92);
+}
+
+.tower-menu-btn.upgrade.cant-upgrade,
+.shop-card.cant-afford .shop-item-cost,
+.shop-card.cant-afford .shop-item-name {
+  -webkit-text-stroke-color: rgba(92, 22, 22, 0.92);
+}
+
+/* 20260606: 最终文字规则微调 */
+.wave-settle-panel .settle-row,
+.wave-settle-panel .settle-row strong {
+  font-weight: 950 !important;
+  text-shadow: none !important;
+  -webkit-text-stroke-width: max(1.8px, calc(1.8px * var(--stage-scale, 1))) !important;
+  -webkit-text-stroke-color: rgba(96, 54, 8, 0.95) !important;
+  paint-order: stroke fill !important;
+}
+
+.shop-info-panel,
+.shop-info-panel * {
+  -webkit-text-stroke-width: 0 !important;
+  -webkit-text-stroke-color: transparent !important;
+  paint-order: normal !important;
+}
+
+.shop-info-panel p {
+  top: calc(var(--inner-top) + calc(38px * var(--stage-scale))) !important;
+  height: calc(58px * var(--stage-scale)) !important;
+}
+
+/* 20260606: 结算面板最终文字与金币反馈修正 */
+.bottom-unified-ui .gold-hud .coin-icon {
+  position: relative;
+  background: none !important;
+  overflow: visible;
+}
+.bottom-unified-ui .gold-hud .coin-icon-shake-layer {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background: url("./assets/ui/panels/coin_icon.png") center / contain no-repeat;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+.bottom-unified-ui .gold-hud.coin-collect-shake .coin-icon,
+.bottom-unified-ui .gold-hud.coin-collect-shake {
+  animation: none !important;
+}
+.bottom-unified-ui .gold-hud.coin-collect-shake .coin-icon-shake-layer {
+  animation: goldCoinButtonCollectPulse 0.16s ease-in-out infinite !important;
+}
+@keyframes goldCoinButtonCollectPulse {
+  0% { transform: scale(0.9) rotate(-2deg); }
+  50% { transform: scale(1.1) rotate(2deg); }
+  100% { transform: scale(0.9) rotate(-2deg); }
+}
+
+.wave-settle-panel .settle-row,
+.wave-settle-panel .settle-row strong,
+.wave-settle-panel .settle-money,
+.wave-settle-panel .settle-money span:not(.settle-mini-coin) {
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif !important;
+  font-weight: 950 !important;
+  letter-spacing: calc(0.4px * var(--stage-scale, 1));
+  color: #ffe78a !important;
+  text-shadow: none !important;
+  -webkit-text-stroke-width: max(2.2px, calc(2.2px * var(--stage-scale, 1))) !important;
+  -webkit-text-stroke-color: rgba(84, 46, 8, 0.98) !important;
+  paint-order: stroke fill !important;
+}
+.wave-settle-panel .settle-row {
+  font-size: min(calc(18px * var(--stage-scale)), 18px) !important;
+}
+.wave-settle-panel .settle-row > span:first-child {
+  color: #fff0ad !important;
+}
+.wave-settle-panel .settle-money {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: min(calc(5px * var(--stage-scale)), 5px);
+  min-width: min(calc(76px * var(--stage-scale)), 76px);
+}
+.wave-settle-panel .settle-money.negative span:not(.settle-mini-coin) {
+  color: #ffb38c !important;
+  -webkit-text-stroke-color: rgba(94, 24, 12, 0.98) !important;
+}
+.wave-settle-panel .settle-mini-coin {
+  flex: 0 0 auto;
+  width: min(calc(18px * var(--stage-scale)), 18px);
+  height: min(calc(18px * var(--stage-scale)), 18px);
+  display: inline-block;
+  background: url("./assets/ui/panels/coin_icon.png") center / contain no-repeat;
+  filter: drop-shadow(0 min(calc(2px * var(--stage-scale)), 2px) min(calc(2px * var(--stage-scale)), 2px) rgba(0,0,0,0.58));
+  -webkit-text-stroke-width: 0 !important;
+}
+.wave-settle-panel .settle-row.total {
+  margin-top: min(calc(8px * var(--stage-scale)), 8px) !important;
+  padding-top: min(calc(10px * var(--stage-scale)), 10px) !important;
+  font-size: min(calc(22px * var(--stage-scale)), 22px) !important;
+}
+.wave-settle-panel .settle-row.total > span:first-child,
+.wave-settle-panel .settle-row.total .settle-money,
+.wave-settle-panel .settle-row.total .settle-money span:not(.settle-mini-coin) {
+  font-size: min(calc(22px * var(--stage-scale)), 22px) !important;
+  color: #ffdf62 !important;
+  -webkit-text-stroke-width: max(2.6px, calc(2.6px * var(--stage-scale, 1))) !important;
+  -webkit-text-stroke-color: rgba(86, 43, 4, 0.99) !important;
+}
+.wave-settle-panel .settle-row.total .settle-mini-coin {
+  width: min(calc(22px * var(--stage-scale)), 22px);
+  height: min(calc(22px * var(--stage-scale)), 22px);
+}
+
+/* 20260606: 失败面板重玩按钮改为 16:9 画布内相对定位，避免 demo/移动端位置漂移 */
+.restart-float:not(.is-quick-restart) {
+  left: 50% !important;
+  right: auto !important;
+  top: calc(50% + calc(112px * var(--stage-scale))) !important;
+  width: calc(302px * var(--stage-scale)) !important;
+  height: calc(116px * var(--stage-scale)) !important;
+  transform: translate(-50%, -50%) !important;
+  transform-origin: 50% 50% !important;
+  z-index: 82 !important;
+}
+.restart-float:not(.is-quick-restart):hover:not(:disabled) {
+  transform: translate(-50%, -50%) scale(1.035) !important;
+}
+.restart-float:not(.is-quick-restart):active:not(:disabled) {
+  transform: translate(-50%, -50%) scale(0.92) !important;
+}
+
+/* 20260606: 失败重玩按钮跟随失败面板内容上移，并快速中心缩放弹出 */
+.restart-float:not(.is-quick-restart) {
+  top: calc(50% + calc(58px * var(--stage-scale))) !important;
+}
+.restart-float:not(.is-quick-restart):not([hidden]) {
+  animation: failRestartButtonPop 0.16s cubic-bezier(0.18, 1.35, 0.35, 1) both;
+}
+@keyframes failRestartButtonPop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.55);
+  }
+  78% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.06);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+.restart-float:not(.is-quick-restart):hover:not(:disabled) {
+  transform: translate(-50%, -50%) scale(1.035) !important;
+}
+.restart-float:not(.is-quick-restart):active:not(:disabled) {
+  transform: translate(-50%, -50%) scale(0.92) !important;
 }
