@@ -91,7 +91,7 @@ let activeShopInfoType = null;
 let latestSettleNetGold = 0;
 let displayedGoldOverride = null;
 let goldCountTweenRaf = null;
-const SETTLEMENT_COIN_SHEET = './assets/effects/settlement_coin_fly_sheet.png';
+const SETTLEMENT_COIN_SHEET = './assets/effects/settlement/settlement_coin_fly_sheet.png';
 const NORMAL_BATTLE_SPEEDS = [1, 2];
 const MAX_LOGIC_STEP = 1 / 60;
 
@@ -445,9 +445,26 @@ const SPRITE_SHEET_EFFECTS = {
   lightHit: { image: './assets/effects/hit/light_hit_sheet.png', frameCols: 3, frameRows: 3, frames: 9, duration: 0.36, width: 88, height: 88, composite: 'screen' },
   thunderHit: { image: './assets/effects/hit/thunder_hit_sheet.png', frameCols: 3, frameRows: 3, frames: 9, duration: 0.38, width: 96, height: 96, composite: 'screen' },
   thunderSplash: { image: './assets/effects/hit/thunder_splash_sheet.png', frameCols: 3, frameRows: 3, frames: 9, duration: 0.36, width: 236, height: 142, composite: 'screen' },
+  bossPharaohBottomHit: { image: './assets/effects/hit/boss_pharaoh_sphinx_bottom_hit_4x4.png', frameCols: 4, frameRows: 4, frames: 16, duration: 1.2, width: 150, height: 150, composite: 'source-over', alphaCutoff: 18 },
+  bossPharaohJudgementHit: { image: './assets/effects/hit/boss_pharaoh_top_judgement_hit_4x4.png', frameCols: 4, frameRows: 4, frames: 16, duration: 1.0, fadeOut: 0.4, width: 150, height: 150, composite: 'source-over', scaleCurve: 'judgementPulse', alphaCutoff: 18 },
+  bossPharaohTopStaffCast: { image: './assets/effects/hit/boss_pharaoh_top_staff_cast_4x4.png', frameCols: 4, frameRows: 4, frames: 16, duration: 2.0, width: 184, height: 184, composite: 'screen', alphaCutoff: 18 },
   snowBossTowerHit: { image: './assets/effects/hit/snow_boss_tower_hit_sheet.png', frameCols: 4, frameRows: 4, frames: 16, duration: 0.72, width: 203, height: 203, composite: 'screen' },
   towerUpgrade: { image: './assets/effects/upgrade/tower_upgrade_sheet.png', frameCols: 4, frameRows: 2, frames: 8, duration: 0.82, width: 95, height: 158, composite: 'screen' },
   monsterExitPortal: { image: './assets/effects/portal/monster_exit_portal_sheet.png', frameCols: 4, frameRows: 4, frames: 16, duration: 2.625, width: 138, height: 245, composite: 'screen', loop: true }
+};
+
+const BOSS_CAST_EFFECTS = {
+  boss_pharaoh_sphinx_top: {
+    effect: 'bossPharaohTopStaffCast',
+    width: 184,
+    height: 184,
+    anchors: [
+      [0.58, 0.20], [0.59, 0.19], [0.60, 0.18], [0.61, 0.18],
+      [0.62, 0.17], [0.63, 0.17], [0.64, 0.18], [0.64, 0.19],
+      [0.63, 0.20], [0.62, 0.20], [0.61, 0.19], [0.60, 0.18],
+      [0.60, 0.17], [0.61, 0.17], [0.62, 0.18], [0.62, 0.19]
+    ]
+  }
 };
 
 const UI_PANEL_ASSETS = {
@@ -463,7 +480,6 @@ const SPAWN_RETRY_DELAY = 0.16;
 const PORTAL_DEBUG = false;
 const UI_ANCHOR_DEBUG = false;
 const portalDebugTune = { x: 8, y: 26, scale: 1.15, scaleX: 0.8, scaleY: 0.72, rotation: 0.42 };
-const level02PortalDebugTune = { x: 20, y: 14, scale: 1.06, scaleX: 0.84, scaleY: 0.72, rotation: 0.36 };
 const uiAnchorDebugTune = loadUiAnchorDebugTuneFromStorage({
   active: 'gold',
   gold: { cx: 78, cy: 94, icon: 106 },
@@ -484,6 +500,48 @@ function loadImage(src) {
     image.onerror = reject;
     image.src = versionedSrc(src);
   });
+}
+
+async function loadSpriteSheetImage(key, def) {
+  const image = await loadImage(def.image);
+  if (!def.removeBlackBackground && !def.alphaCutoff) return image;
+  const off = document.createElement('canvas');
+  off.width = image.width;
+  off.height = image.height;
+  const g = off.getContext('2d');
+  g.drawImage(image, 0, 0);
+  const imageData = g.getImageData(0, 0, off.width, off.height);
+  const data = imageData.data;
+  if (def.alphaCutoff) {
+    const cutoff = Math.max(0, Math.min(255, Number(def.alphaCutoff) || 0));
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i + 3] <= cutoff) {
+        data[i] = 0;
+        data[i + 1] = 0;
+        data[i + 2] = 0;
+        data[i + 3] = 0;
+      }
+    }
+  }
+  if (!def.removeBlackBackground) {
+    g.putImageData(imageData, 0, 0);
+    return off;
+  }
+  const threshold = def.blackThreshold ?? 34;
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const gch = data[i + 1];
+    const b = data[i + 2];
+    const max = Math.max(r, gch, b);
+    if (max <= threshold) {
+      data[i + 3] = 0;
+      continue;
+    }
+    const lift = Math.max(0, Math.min(1, (max - threshold) / 42));
+    data[i + 3] = Math.round(data[i + 3] * lift);
+  }
+  g.putImageData(imageData, 0, 0);
+  return off;
 }
 
 function buildRoadMaskPixelCache() {
@@ -523,6 +581,35 @@ async function loadActiveMap(mapId) {
   buildRoadMaskPixelCache();
   buildPlacementGridData();
   cfg.game.path = activeMap.enemyPath;
+  cfg.game.paths = Array.isArray(activeMap.enemyPaths) && activeMap.enemyPaths.length ? activeMap.enemyPaths : [activeMap.enemyPath];
+}
+
+function roundTowerStat(key, value) {
+  if (!Number.isFinite(value)) return value;
+  if (key === 'cooldown' || key === 'slow' || key === 'slowDuration') return Math.round(value * 100) / 100;
+  if (key === 'targetCount') return Math.max(1, Math.round(value));
+  return Math.round(value);
+}
+
+function buildTowerLevelsFromFormula(def) {
+  if (!def) return;
+  if (def.baseStats && def.growth) {
+    def.levels = [0, 1, 2].map(levelIndex => {
+      const stats = {};
+      for (const [key, baseValue] of Object.entries(def.baseStats)) {
+        const growthValue = Array.isArray(def.growth[key]) ? def.growth[key][levelIndex] : 1;
+        const multiplier = Number.isFinite(growthValue) ? growthValue : 1;
+        stats[key] = roundTowerStat(key, Number(baseValue) * multiplier);
+      }
+      return stats;
+    });
+  } else if (!Array.isArray(def.levels)) {
+    def.levels = [];
+  }
+}
+
+function normalizeTowerConfig(towerConfig) {
+  Object.values(towerConfig || {}).forEach(buildTowerLevelsFromFormula);
 }
 
 async function loadConfig() {
@@ -531,10 +618,13 @@ async function loadConfig() {
   );
   cfg = gameData;
   towersCfg = towerData.towers;
+  normalizeTowerConfig(towersCfg);
   enemiesCfg = enemyData.enemies;
   waveCfg = wavesData;
   mapsCfg = mapsData;
-  await loadActiveMap();
+  const bootParams = new URLSearchParams(window.location.search);
+  const bootMapId = bootParams.get('level') || bootParams.get('map');
+  await loadActiveMap(bootMapId && mapsCfg.maps?.[bootMapId] ? bootMapId : undefined);
   populateLevelSelect();
   towerImages = {};
   enemyImages = {};
@@ -576,7 +666,7 @@ async function loadConfig() {
     projectileImages[key] = await loadImage(def.image);
   }));
   await Promise.all(Object.entries(SPRITE_SHEET_EFFECTS).map(async ([key, def]) => {
-    spriteSheetImages[key] = await loadImage(def.image);
+    spriteSheetImages[key] = await loadSpriteSheetImage(key, def);
   }));
   await Promise.all(Object.entries(UI_PANEL_ASSETS).map(async ([key, src]) => {
     uiPanelImages[key] = await loadImage(src);
@@ -1842,7 +1932,7 @@ function towerSellValue(item) {
 function upgradeDirectCost(item) {
   if (!item || item.level >= 3) return 0;
   const baseCost = towersCfg[item.type]?.cost || 0;
-  return item.level === 1 ? baseCost * 3 : baseCost * 6;
+  return item.level === 1 ? baseCost * 2 : baseCost * 4;
 }
 
 function hideTowerActionMenu() {
@@ -2048,6 +2138,72 @@ function adjustedWaveSpawns(wave) {
     .filter(group => group.count > 0);
 }
 
+function pathSpawnDelayForWave(waveNumber, pathIndex = 0) {
+  const delaysByWave = activeMap?.pathSpawnDelaysByWave;
+  const delays = delaysByWave?.[String(waveNumber)] || activeMap?.pathSpawnDelays || [];
+  const delay = Array.isArray(delays) ? Number(delays[pathIndex] || 0) : 0;
+  return Number.isFinite(delay) ? Math.max(0, delay) : 0;
+}
+
+function spawnPatternValueByWave(table, waveNumber, fallback) {
+  if (table && Object.prototype.hasOwnProperty.call(table, String(waveNumber))) {
+    const value = Number(table[String(waveNumber)]);
+    if (Number.isFinite(value)) return value;
+  }
+  return fallback;
+}
+
+function queueAlternatingBatchSpawns(spawns, waveNumber, pathCount) {
+  const pattern = activeMap?.spawnPattern || {};
+  const batchSize = Math.max(1, Math.round(spawnPatternValueByWave(pattern.batchSizeByWave, waveNumber, pattern.batchSize || 4)));
+  const switchDelay = Math.max(0, spawnPatternValueByWave(pattern.switchDelayByWave, waveNumber, pattern.switchDelay ?? 8));
+  let delay = 0;
+  let nextPathIndex = 0;
+  for (const group of spawns) {
+    let remaining = group.count;
+    while (remaining > 0) {
+      const count = Math.min(batchSize, remaining);
+      const pathIndex = nextPathIndex % pathCount;
+      for (let i = 0; i < count; i++) {
+        game.spawnQueue.push({
+          type: group.type,
+          at: delay + i * group.interval,
+          pathIndex
+        });
+      }
+      remaining -= count;
+      nextPathIndex += 1;
+      delay += Math.max(0, (count - 1) * group.interval) + switchDelay;
+    }
+  }
+}
+
+function queueDefaultWaveSpawns(spawns, waveNumber, pathCount) {
+  let delay = 0;
+  for (const group of spawns) {
+    if (pathCount <= 1) {
+      for (let i = 0; i < group.count; i++) {
+        game.spawnQueue.push({ type: group.type, at: delay, pathIndex: 0 });
+        delay += group.interval;
+      }
+      continue;
+    }
+
+    const perPathCounts = Array.from({ length: pathCount }, (_, pathIndex) => Math.floor(group.count / pathCount) + (pathIndex < group.count % pathCount ? 1 : 0));
+    for (let pathIndex = 0; pathIndex < pathCount; pathIndex++) {
+      const pathDelay = pathSpawnDelayForWave(waveNumber, pathIndex);
+      for (let i = 0; i < perPathCounts[pathIndex]; i++) {
+        game.spawnQueue.push({
+          type: group.type,
+          at: delay + pathDelay + i * group.interval,
+          pathIndex
+        });
+      }
+    }
+    delay += Math.max(...perPathCounts) * group.interval;
+  }
+}
+
 function startWave() {
   if (game.phase !== 'prep') return;
   hideWaveSettlePanel();
@@ -2069,12 +2225,11 @@ function startWave() {
   game.currentWaveSpawned = 0;
   game.bossReady = false;
   game.bossActive = false;
-  let delay = 0;
-  for (const group of spawns) {
-    for (let i = 0; i < group.count; i++) {
-      game.spawnQueue.push({ type: group.type, at: delay });
-      delay += group.interval;
-    }
+  const pathCount = Math.max(1, Math.floor(activeMap?.spawnEntrances || 1));
+  if (pathCount > 1 && activeMap?.spawnPattern?.mode === 'alternatingBatches') {
+    queueAlternatingBatchSpawns(spawns, wave.wave, pathCount);
+  } else {
+    queueDefaultWaveSpawns(spawns, wave.wave, pathCount);
   }
   game.spawnQueue.sort((a, b) => a.at - b.at);
   game.spawnTimer = 0;
@@ -2085,14 +2240,15 @@ function startWave() {
 function finishWave() {
   const wave = waveCfg.waves[game.waveIndex];
   const mineIncome = Object.values(game.deployed).reduce((sum, item) => {
-    if (!item || item.type !== 'mine') return sum;
+    if (!item || item.type !== 'mine' || item.disabledTimer > 0) return sum;
     const level = towersCfg.mine.levels[item.level - 1];
     return sum + level.income;
   }, 0);
   const stats = getWaveStats();
+  const waveClearReward = Math.max(0, Math.floor(game.currentWaveTotal || 0));
   stats.mineGold = mineIncome;
-  stats.rewardGold = wave.reward;
-  addGold(wave.reward + mineIncome);
+  stats.rewardGold = waveClearReward;
+  addGold(waveClearReward + mineIncome);
   game.score += game.hp * 3 + mineIncome;
   const settle = waveSettleText(wave.wave, stats);
   game.waveIndex += 1;
@@ -2132,14 +2288,33 @@ function startBoss() {
   game.currentWaveTotal = 1;
   game.currentWaveSpawned = 1;
   const bossType = activeMap?.bossType || bossCfg.type;
-  const spawnedBoss = spawnEnemy(bossType);
-  const boss = spawnedBoss && enemiesCfg[spawnedBoss.type]?.isBoss ? spawnedBoss : game.enemies.find(e => enemiesCfg[e.type]?.isBoss);
-  if (boss && bossCfg.skills?.haste && !enemiesCfg[boss.type]?.towerAttack) {
-    boss.skillTimers = { hasteDelay: bossCfg.skills.haste.triggerDelay ?? 1.2, haste: 0 };
+  const bossPathIndexes = Array.isArray(activeMap?.bossPathIndexes) && activeMap.bossPathIndexes.length ? activeMap.bossPathIndexes : [0];
+  const spawnedBosses = bossPathIndexes
+    .map(pathIndex => {
+      const spawnDelay = Number(activeMap?.bossSpawnDelaysByPath?.[String(pathIndex)] || 0);
+      const type = activeMap?.bossTypesByPath?.[String(pathIndex)] || bossType;
+      if (spawnDelay > 0) {
+        game.spawnQueue.push({ type, at: spawnDelay, pathIndex, boss: true });
+        return null;
+      }
+      return spawnEnemy(type, 0, pathIndex);
+    })
+    .filter(enemy => enemy && enemiesCfg[enemy.type]?.isBoss);
+  game.currentWaveTotal = spawnedBosses.length || 1;
+  game.currentWaveSpawned = spawnedBosses.length || 1;
+  for (const boss of spawnedBosses) {
+    setupSpawnedBoss(boss);
   }
-  if (boss) setupBossTowerAttack(boss);
   setMessage(bossCfg.warningText || 'BOSS 来袭！');
   renderSide();
+}
+
+function setupSpawnedBoss(boss) {
+  const bossCfg = waveCfg.boss;
+  if (boss.type === bossCfg.type && bossCfg.skills?.haste && !enemiesCfg[boss.type]?.towerAttack) {
+    boss.skillTimers = { hasteDelay: bossCfg.skills.haste.triggerDelay ?? 1.2, haste: 0 };
+  }
+  setupBossTowerAttack(boss);
 }
 
 async function finishBoss() {
@@ -2157,10 +2332,12 @@ async function finishBoss() {
   renderSide();
 }
 
-function spawnEnemy(type, offset = 0) {
+function spawnEnemy(type, offset = 0, pathIndex = 0) {
   const def = enemiesCfg[type];
-  const p = cfg.game.path[0];
-  const waveScale = Math.max(0, game.waveIndex + levelIndex);
+  const paths = cfg.game.paths?.length ? cfg.game.paths : [cfg.game.path];
+  const path = paths[Math.abs(pathIndex) % paths.length] || cfg.game.path;
+  const p = path[0];
+  const waveScale = Math.max(0, game.waveIndex);
   const hp = def.hp * (1 + waveScale * 0.10);
   const enemy = {
     id: crypto.randomUUID(),
@@ -2170,6 +2347,7 @@ function spawnEnemy(type, offset = 0) {
     hp,
     maxHp: hp,
     speed: def.speed * (1 + waveScale * 0.10),
+    pathIndex: Math.abs(pathIndex) % (paths.length || 1),
     waypoint: 1,
     slowTimer: 0,
     slowFactor: 0,
@@ -2203,16 +2381,18 @@ function update(dt) {
   game.spawnTimer += dt;
   while (game.spawnQueue.length && game.spawnQueue[0].at <= game.spawnTimer) {
     const nextSpawn = game.spawnQueue[0];
-    if (!canSpawnAtEntrance()) {
+    if (!canSpawnAtEntrance(nextSpawn.pathIndex || 0)) {
       nextSpawn.at = game.spawnTimer + SPAWN_RETRY_DELAY;
       break;
     }
-    spawnEnemy(game.spawnQueue.shift().type);
+    const spawn = game.spawnQueue.shift();
+    const spawned = spawnEnemy(spawn.type, spawn.offset || 0, spawn.pathIndex || 0);
+    if (spawn.boss && spawned && enemiesCfg[spawned.type]?.isBoss) setupSpawnedBoss(spawned);
     game.currentWaveSpawned += 1;
   }
 
-  updateEnemies(dt);
   updateBossTowerAttacks(dt);
+  updateEnemies(dt);
   updateTowers(dt);
   updateProjectiles(dt);
   updateFloating(dt);
@@ -2234,15 +2414,18 @@ function update(dt) {
   }
 }
 
-function canSpawnAtEntrance() {
-  const start = cfg.game.path?.[0];
-  const next = cfg.game.path?.[1] || start;
+function canSpawnAtEntrance(pathIndex = 0) {
+  const paths = cfg.game.paths?.length ? cfg.game.paths : [cfg.game.path];
+  const path = paths[Math.abs(pathIndex) % paths.length] || cfg.game.path;
+  const start = path?.[0];
+  const next = path?.[1] || start;
   if (!start) return true;
   const dx = (next?.x ?? start.x) - start.x;
   const dy = (next?.y ?? start.y) - start.y;
   const lenSq = dx * dx + dy * dy || 1;
   for (const enemy of game.enemies) {
     if (enemy.dead) continue;
+    if ((enemy.pathIndex || 0) !== (Math.abs(pathIndex) % paths.length)) continue;
     const t = ((enemy.x - start.x) * dx + (enemy.y - start.y) * dy) / lenSq;
     const along = t * Math.sqrt(lenSq);
     const lateral = distancePointToSegment(enemy.x, enemy.y, start.x, start.y, next.x, next.y);
@@ -2284,20 +2467,26 @@ function updateBossTowerAttacks(dt) {
     if (boss.attacking) {
       boss.attackAge += dt;
       const attackDuration = attackCfg.duration || 1;
-      const shakeAt = Math.max(0, attackDuration - 0.4);
       const hitEffectAt = Math.max(0, attackDuration - (attackCfg.towerHitEffectLead ?? 0.55));
+      const shakeAt = attackCfg.destroyRandomTower ? hitEffectAt : Math.max(0, attackDuration - 0.4);
       if (!boss.attackHitEffectResolved && boss.attackAge >= hitEffectAt) {
         boss.attackHitEffectResolved = true;
-        spawnBossTowerHitEffects(attackCfg);
+        if ((attackCfg.disableRandomTower || attackCfg.destroyRandomTower) && !boss.attackResolved) {
+          resolveBossTowerAttack(boss, attackCfg);
+        } else if (!attackCfg.disableRandomTower && !attackCfg.destroyRandomTower) {
+          spawnBossTowerHitEffects(boss, attackCfg);
+        }
       }
       if (!boss.attackShakeResolved && boss.attackAge >= shakeAt) {
         boss.attackShakeResolved = true;
-        startScreenShake(attackCfg.shakeDuration || 0.55, attackCfg.shakeIntensity || 9);
+        if ((attackCfg.shakeDuration || 0) > 0 && (attackCfg.shakeIntensity || 0) > 0) {
+          startScreenShake(attackCfg.shakeDuration || 0.55, attackCfg.shakeIntensity || 9);
+        }
       }
       if (!boss.attackResolved && boss.attackAge >= attackDuration) {
-        if (!boss.attackHitEffectResolved) {
+        if (!boss.attackHitEffectResolved && !attackCfg.disableRandomTower && !attackCfg.destroyRandomTower) {
           boss.attackHitEffectResolved = true;
-          spawnBossTowerHitEffects(attackCfg);
+          spawnBossTowerHitEffects(boss, attackCfg);
         }
         resolveBossTowerAttack(boss, attackCfg);
       }
@@ -2305,10 +2494,22 @@ function updateBossTowerAttacks(dt) {
     }
     boss.attackTimer = (boss.attackTimer ?? attackCfg.cooldown ?? 8) - dt;
     if (boss.attackTimer <= 0) {
-      triggerBossTowerAttack(boss, attackCfg);
-      boss.attackTimer = attackCfg.cooldown || 8;
+      if (canBossTowerAttack(boss, attackCfg)) {
+        triggerBossTowerAttack(boss, attackCfg);
+        boss.attackTimer = attackCfg.cooldown || 8;
+      } else {
+        boss.attackTimer = Math.min(0.5, attackCfg.cooldown || 8);
+      }
     }
   }
+}
+
+function canBossTowerAttack(boss, attackCfg = {}) {
+  if (!boss || !attackCfg) return false;
+  if (attackCfg.disableRandomTower) return !!selectDisableTowerTarget(boss, attackCfg);
+  if (attackCfg.destroyRandomTower) return [...allTowerSlots()].some(slot => game.deployed[slot.id] && isTowerInBossAttackRange(slot, boss, attackCfg));
+  if (attackCfg.damageTowers === false) return true;
+  return [...allTowerSlots()].some(slot => game.deployed[slot.id] && isTowerInBossAttackRange(slot, boss, attackCfg));
 }
 
 function triggerBossTowerAttack(boss, attackCfg) {
@@ -2322,43 +2523,130 @@ function triggerBossTowerAttack(boss, attackCfg) {
 
 function resolveBossTowerAttack(boss, attackCfg) {
   boss.attackResolved = true;
-  const affected = damageAllTowersByBoss(attackCfg);
+  if (attackCfg.disableRandomTower) {
+    const disabled = disableRandomTowerByBoss(boss, attackCfg);
+    if (disabled) setMessage(`Boss 发动${attackCfg.name || '审判'}：一座建筑暂时无法输出。`);
+    else setMessage(`Boss 发动${attackCfg.name || '审判'}，但地图上没有可禁用的建筑。`);
+    return;
+  }
+  if (attackCfg.destroyRandomTower) {
+    const destroyed = destroyRandomTowerByBoss(boss, attackCfg);
+    if (destroyed) setMessage(`Boss 发动${attackCfg.name || '毁灭'}：随机摧毁了一座建筑。`);
+    else setMessage(`Boss 发动${attackCfg.name || '毁灭'}，但地图上没有可摧毁的建筑。`);
+    return;
+  }
+  if (attackCfg.damageTowers === false) {
+    setMessage(`Boss 发动${attackCfg.name || '技能'}！`);
+    return;
+  }
+  const affected = damageAllTowersByBoss(boss, attackCfg);
   if (affected > 0) setMessage(`Boss 发动${attackCfg.name || '雪崩'}：${affected} 座塔受到攻击，低级塔会消失，高级塔会降级。`);
 }
 
-function spawnBossTowerHitEffects(attackCfg = {}) {
+function destroyRandomTowerByBoss(boss, attackCfg = {}) {
+  const candidates = [...allTowerSlots()]
+    .filter(slot => game.deployed[slot.id] && isTowerInBossAttackRange(slot, boss, attackCfg));
+  if (!candidates.length) return false;
+  const slot = candidates[Math.floor(Math.random() * candidates.length)];
+  const tower = game.deployed[slot.id];
+  if (attackCfg.towerHitEffect) spawnBossTowerHitEffect(slot, tower, attackCfg.towerHitEffect, { destroySlotId: slot.id });
+  else destroyTowerSlot(slot.id);
+  floatText(slot.x, slot.y - 72, '毁灭', '#fb923c', { life: 1.0, size: 18, stroke: '#7c2d12' });
+  return true;
+}
+
+function destroyTowerSlot(slotId) {
+  if (!slotId || !game.deployed[slotId]) return false;
+  delete game.deployed[slotId];
+  game.customTowerSlots = game.customTowerSlots.filter(item => item.id !== slotId);
+  if (game.selected?.area === 'deployed' && game.selected.slotId === slotId) game.selected = null;
+  cleanupEmptyTowerSlots();
+  renderSide();
+  return true;
+}
+
+function disableRandomTowerByBoss(boss, attackCfg = {}) {
+  const slot = selectDisableTowerTarget(boss, attackCfg);
+  if (!slot) return false;
+  const tower = game.deployed[slot.id];
+  const duration = Math.max(0.1, Number(attackCfg.disableDuration || 3));
+  tower.disabledTimer = Math.max(tower.disabledTimer || 0, duration);
+  tower.cd = Math.max(tower.cd || 0, duration);
+  if (attackCfg.towerHitEffect) {
+    const effectOptions = attackCfg.disableRandomTower
+      ? { totalDuration: duration, holdLastFrame: true, fadeOut: 0.4 }
+      : {};
+    spawnBossTowerHitEffect(slot, tower, attackCfg.towerHitEffect, effectOptions);
+  }
+  floatText(slot.x, slot.y - 72, attackCfg.name || '审判', '#fde68a', { life: 1.0, size: 18, stroke: '#78350f' });
+  return true;
+}
+
+function selectDisableTowerTarget(boss, attackCfg = {}) {
+  const outputSlots = [...allTowerSlots()].filter(slot => {
+    const tower = game.deployed[slot.id];
+    return tower && tower.type !== 'mine';
+  });
+  if (!outputSlots.length) return null;
+  const priorityRange = Number(attackCfg.priorityRange || attackCfg.preferRange || 150);
+  const near = outputSlots.filter(slot => Number.isFinite(priorityRange) && Math.hypot(slot.x - boss.x, slot.y - boss.y) <= priorityRange);
+  const candidates = near.length ? near : outputSlots;
+  return candidates[Math.floor(Math.random() * candidates.length)] || null;
+}
+
+function isTowerInBossAttackRange(slot, boss, attackCfg = {}) {
+  const range = Number(attackCfg.range || 0);
+  if (!range || !Number.isFinite(range)) return true;
+  if (!slot || !boss) return false;
+  return Math.hypot(slot.x - boss.x, slot.y - boss.y) <= range;
+}
+
+function spawnBossTowerHitEffects(boss, attackCfg = {}) {
   const hitEffect = attackCfg.towerHitEffect;
   if (!hitEffect) return;
   for (const slot of [...allTowerSlots()]) {
     const tower = game.deployed[slot.id];
-    if (!tower) continue;
+    if (!tower || !isTowerInBossAttackRange(slot, boss, attackCfg)) continue;
     spawnBossTowerHitEffect(slot, tower, hitEffect);
   }
 }
 
-function spawnBossTowerHitEffect(slot, tower, effectKey) {
+function spawnBossTowerHitEffect(slot, tower, effectKey, options = {}) {
   const def = SPRITE_SHEET_EFFECTS[effectKey];
   if (!slot || !tower || !def) return;
   const rect = towerSpriteRect(slot, tower);
+  const playDuration = options.playDuration ?? def.duration;
+  const fadeOut = options.fadeOut ?? def.fadeOut ?? 0;
+  const totalDuration = options.totalDuration ?? def.totalDuration ?? (playDuration + fadeOut);
   game.projectiles.push({
     type: 'spriteEffect',
     effect: effectKey,
     x: slot.x,
     y: rect.y + rect.height * 0.56,
+    sortY: slot.y + 0.1,
     width: def.width,
     height: def.height,
-    scale: 0.5 + Math.random() * 0.5,
+    scale: effectKey === 'bossPharaohBottomHit' ? 1.4 : (effectKey === 'bossPharaohJudgementHit' ? 0.75 : (options.scale ?? def.scale ?? 1)),
+    destroySlotId: options.destroySlotId || null,
+    destroyAt: options.destroyAt ?? (options.destroySlotId ? totalDuration * 0.28 : null),
+    destroyResolved: false,
     age: 0,
-    duration: def.duration,
-    frameEase: 'easeOut'
+    duration: totalDuration,
+    playDuration,
+    fadeOut,
+    holdLastFrame: !!options.holdLastFrame,
+    worldLayer: effectKey === 'bossPharaohBottomHit' || effectKey === 'bossPharaohJudgementHit',
+    judgementGlyph: effectKey === 'bossPharaohJudgementHit',
+    frameEase: 'easeOut',
+    scaleCurve: options.scaleCurve ?? def.scaleCurve ?? null
   });
 }
 
-function damageAllTowersByBoss(attackCfg = {}) {
+function damageAllTowersByBoss(boss, attackCfg = {}) {
   let affected = 0;
   for (const slot of [...allTowerSlots()]) {
     const tower = game.deployed[slot.id];
-    if (!tower) continue;
+    if (!tower || !isTowerInBossAttackRange(slot, boss, attackCfg)) continue;
     affected += 1;
     if (tower.level <= 1) {
       delete game.deployed[slot.id];
@@ -2377,8 +2665,9 @@ function damageAllTowersByBoss(attackCfg = {}) {
 }
 
 function updateEnemies(dt) {
-  const path = cfg.game.path;
+  const paths = cfg.game.paths?.length ? cfg.game.paths : [cfg.game.path];
   for (const enemy of game.enemies) {
+    const path = paths[enemy.pathIndex || 0] || cfg.game.path;
     if (enemy.slowTimer > 0) enemy.slowTimer -= dt;
     if (enemy.skillTimers?.hasteTip > 0) enemy.skillTimers.hasteTip -= dt;
     enemy.spawnAge = Math.min(enemy.spawnFadeDuration || 1, (enemy.spawnAge || 0) + dt);
@@ -2421,7 +2710,7 @@ function updateEnemies(dt) {
 function updateEnemyHaste(enemy, dt) {
   const def = enemiesCfg[enemy.type];
   if (!def?.isBoss || !enemy.skillTimers) return 1;
-  const hasteCfg = waveCfg.boss?.skills?.haste;
+  const hasteCfg = enemy.type === waveCfg.boss?.type ? waveCfg.boss?.skills?.haste : null;
   if (!hasteCfg) return 1;
   if (enemy.skillTimers.haste > 0) {
     enemy.skillTimers.haste -= dt;
@@ -2441,7 +2730,12 @@ function updateEnemyHaste(enemy, dt) {
 function updateTowers(dt) {
   for (const slot of allTowerSlots()) {
     const tower = game.deployed[slot.id];
-    if (!tower || tower.type === 'mine') continue;
+    if (!tower) continue;
+    if (tower.disabledTimer > 0) {
+      tower.disabledTimer = Math.max(0, tower.disabledTimer - dt);
+      continue;
+    }
+    if (tower.type === 'mine') continue;
     tower.cd -= dt;
     if (tower.cd > 0) continue;
     const def = towersCfg[tower.type];
@@ -2555,7 +2849,8 @@ function enemyFootHitPoint(enemy) {
     const footY = sprite.footY ?? 0.82;
     const topY = enemy.y - height * footY;
     const centerY = topY + height * 0.5;
-    return { x: enemy.x, y: centerY + (enemy.y - centerY) * 0.67 };
+    const factor = def.isBoss ? 0.30 : 0.56;
+    return { x: enemy.x, y: centerY + (enemy.y - centerY) * factor };
   }
   const radius = def.radius || 13;
   return { x: enemy.x, y: enemy.y + radius * 0.55 };
@@ -2574,7 +2869,8 @@ function fireTower(tower, slot, target, stat, targets = [target]) {
   const targetHit = enemyHitPoint(target);
   if (tower.type === 'thunder') {
     damageEnemy(target, stat.damage, tower.type, stat);
-    spawnHitEffect('thunderHit', targetHit.x, targetHit.y);
+    const hitEffect = 'thunderHit';
+    spawnHitEffect(hitEffect, targetHit.x, targetHit.y, { scale: 1, composite: 'screen' });
     explode({ tx: target.x, ty: target.y, splash: stat.splash, damage: Math.round(stat.damage * 0.70), primaryTargetId: target.id });
     game.projectiles.push({ type: 'effectBeam', effect: 'thunderBeam', x: origin.x, y: origin.y, tx: targetHit.x, ty: targetHit.y, targetExtend: 12, age: 0, duration: EFFECT_SEQUENCES.thunderBeam.duration, color });
   } else {
@@ -2628,7 +2924,14 @@ function updateProjectiles(dt) {
     }
     if (p.type === 'spriteEffect') {
       p.age += dt;
-      if (p.age >= p.duration) p.dead = true;
+      if (p.destroySlotId && !p.destroyResolved && p.age >= (p.destroyAt ?? p.duration)) {
+        destroyTowerSlot(p.destroySlotId);
+        p.destroyResolved = true;
+      }
+      if (p.age >= p.duration) {
+        if (p.destroySlotId && !p.destroyResolved) destroyTowerSlot(p.destroySlotId);
+        p.dead = true;
+      }
       continue;
     }
     const dx = p.tx - p.x;
@@ -2678,7 +2981,7 @@ function killEnemy(enemy) {
   game.score += reward * 12;
   if (def.splitInto) {
     for (let i = 0; i < def.splitInto.count; i++) {
-      spawnEnemy(def.splitInto.type, i * -10);
+      spawnEnemy(def.splitInto.type, i * -10, enemy.pathIndex || 0);
       const child = game.enemies[game.enemies.length - 1];
       child.x = enemy.x + (i ? 10 : -10);
       child.y = enemy.y + (i ? 8 : -8);
@@ -2931,18 +3234,21 @@ function drawBackground() {
 }
 
 function drawPath() {
-  const path = cfg.game.path;
-  if (!path?.length) return;
+  const paths = cfg.game.paths?.length ? cfg.game.paths : [cfg.game.path];
+  if (!paths.length) return;
   ctx.save();
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.lineWidth = 6;
   ctx.setLineDash([14, 12]);
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.34)';
-  ctx.beginPath();
-  ctx.moveTo(path[0].x, path[0].y);
-  for (const p of path.slice(1)) ctx.lineTo(p.x, p.y);
-  ctx.stroke();
+  for (const path of paths) {
+    if (!path?.length) continue;
+    ctx.beginPath();
+    ctx.moveTo(path[0].x, path[0].y);
+    for (const p of path.slice(1)) ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  }
   ctx.setLineDash([]);
   ctx.restore();
 }
@@ -3016,7 +3322,7 @@ function drawTowerSprite(slot, item, alpha = 1, highlighted = false) {
     ctx.shadowBlur = 0;
     ctx.globalAlpha = alpha;
   }
-  drawGemIdleEffect(item, rect, alpha);
+  // 塔顶循环特效单独参与世界层级排序，避免高塔特效在 Boss 路过时压住 Boss。
   ctx.globalAlpha = 1;
   ctx.fillStyle = '#0b2a5b';
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.78)';
@@ -3026,6 +3332,14 @@ function drawTowerSprite(slot, item, alpha = 1, highlighted = false) {
   ctx.textBaseline = 'middle';
   ctx.strokeText(`Lv${item.level}`, 0, 20);
   ctx.fillText(`Lv${item.level}`, 0, 20);
+  ctx.restore();
+}
+
+function drawTowerGemIdleEffect(slot, item, alpha = 1) {
+  ctx.save();
+  ctx.translate(slot.x, slot.y);
+  const rect = towerSpriteRect({ x: 0, y: 0 }, item);
+  drawGemIdleEffect(item, rect, alpha);
   ctx.restore();
 }
 
@@ -3357,13 +3671,20 @@ function drawWorldObjects() {
       continue;
     }
     objects.push({ kind: 'tower', y: slot.y, slot, item });
+    const gemPoint = towerGemPoint(slot, item);
+    objects.push({ kind: 'towerGem', y: gemPoint.y, slot, item });
   }
   for (const enemy of game.enemies) {
     objects.push({ kind: 'enemy', y: enemy.y, enemy });
   }
+  for (const p of game.projectiles) {
+    if (p.type === 'spriteEffect' && p.worldLayer) objects.push({ kind: 'effect', y: p.sortY ?? p.y, effect: p });
+  }
   objects.sort((a, b) => a.y - b.y);
   for (const obj of objects) {
     if (obj.kind === 'enemy') drawEnemy(obj.enemy);
+    else if (obj.kind === 'towerGem') drawTowerGemIdleEffect(obj.slot, obj.item);
+    else if (obj.kind === 'effect') drawSpriteEffect(obj.effect);
     else drawTowerSlot(obj.slot, obj.item);
   }
 }
@@ -3371,11 +3692,8 @@ function drawWorldObjects() {
 function drawMonsterExitPortal() {
   const def = SPRITE_SHEET_EFFECTS.monsterExitPortal;
   const img = spriteSheetImages.monsterExitPortal;
-  const path = cfg.game.path;
-  if (!def || !img || !path?.length || game.phase === 'ended') return;
-  const start = path[0];
-  const next = path[1] || start;
-  const angle = Math.atan2(next.y - start.y, next.x - start.x);
+  const paths = cfg.game.paths?.length ? cfg.game.paths : [cfg.game.path];
+  if (!def || !img || !paths.length || game.phase === 'ended') return;
   const cols = def.frameCols || 4;
   const rows = def.frameRows || 6;
   const frameCount = def.frames || cols * rows;
@@ -3384,29 +3702,38 @@ function drawMonsterExitPortal() {
   const sh = img.height / rows;
   const sx = (frameIndex % cols) * sw;
   const sy = Math.floor(frameIndex / cols) * sh;
-  const dx = Math.cos(angle);
-  const dy = Math.sin(angle);
-  let x = start.x - dx * 18 - def.width * 0.03;
-  let y = start.y - dy * 18 - 29 - def.height * 0.12;
-  let drawW = def.width || sw;
-  let drawH = def.height || sh;
-  const tune = activeMapId === 'level_02' ? level02PortalDebugTune : portalDebugTune;
-  x += tune.x;
-  y += tune.y;
-  drawW *= tune.scale;
-  drawH *= tune.scale;
-  const transform = { a: tune.scaleX, b: -0.08, c: 0.10, d: tune.scaleY, rotation: tune.rotation };
 
-  ctx.save();
-  ctx.globalCompositeOperation = def.composite || 'screen';
-  ctx.globalAlpha = 0.92;
-  ctx.translate(x, y);
-  ctx.rotate(transform.rotation);
-  ctx.transform(transform.a, transform.b, transform.c, transform.d, 0, 0);
-  ctx.drawImage(img, sx, sy, sw, sh, -drawW / 2, -drawH / 2, drawW, drawH);
-  ctx.restore();
+  paths.forEach((path, index) => {
+    if (!path?.length) return;
+    const start = path[0];
+    const next = path[1] || start;
+    const angle = Math.atan2(next.y - start.y, next.x - start.x);
+    const dx = Math.cos(angle);
+    const dy = Math.sin(angle);
+    let x = start.x - dx * 18 - def.width * 0.03;
+    let y = start.y - dy * 18 - 29 - def.height * 0.12;
+    let drawW = def.width || sw;
+    let drawH = def.height || sh;
+    const baseTune = portalDebugTune;
+    const offset = activeMap?.portalOffsets?.[index] || activeMap?.portalOffset || { x: 0, y: 0 };
+    const tune = { ...baseTune, x: (baseTune.x || 0) + (offset.x || 0), y: (baseTune.y || 0) + (offset.y || 0) };
+    x += tune.x;
+    y += tune.y;
+    drawW *= tune.scale;
+    drawH *= tune.scale;
+    const transform = { a: tune.scaleX, b: -0.08, c: 0.10, d: tune.scaleY, rotation: tune.rotation };
 
-  if (PORTAL_DEBUG) drawAdjustDebugOverlay({ start, next, x, y, width: drawW, height: drawH, transform, startLabel: activeMapId === 'level_02' ? '第二关入口点' : '第一关入口点', centerLabel: activeMapId === 'level_02' ? '第二关漩涡中心' : '第一关漩涡中心', tune });
+    ctx.save();
+    ctx.globalCompositeOperation = def.composite || 'screen';
+    ctx.globalAlpha = 0.92;
+    ctx.translate(x, y);
+    ctx.rotate(transform.rotation);
+    ctx.transform(transform.a, transform.b, transform.c, transform.d, 0, 0);
+    ctx.drawImage(img, sx, sy, sw, sh, -drawW / 2, -drawH / 2, drawW, drawH);
+    ctx.restore();
+
+    if (PORTAL_DEBUG) drawAdjustDebugOverlay({ start, next, x, y, width: drawW, height: drawH, transform, startLabel: `入口点${index + 1}`, centerLabel: `漩涡中心${index + 1}`, tune });
+  });
 }
 
 function drawAdjustDebugOverlay({ start, next, x, y, width, height, transform, tune, startLabel = '参考点', centerLabel = '中心点' }) {
@@ -3524,6 +3851,35 @@ function drawBossHasteTip(e) {
   ctx.restore();
 }
 
+function drawBossCastEffect(e, rect, frame = 0) {
+  const cast = BOSS_CAST_EFFECTS[e.type];
+  if (!cast || !e.attacking) return;
+  const def = SPRITE_SHEET_EFFECTS[cast.effect];
+  const img = spriteSheetImages[cast.effect];
+  if (!def || !img) return;
+  const cols = def.frameCols || 4;
+  const rows = def.frameRows || 4;
+  const frameCount = def.frames || cols * rows;
+  const attackDef = enemiesCfg[e.type]?.towerAttack || {};
+  const duration = Math.max(0.001, attackDef.duration || def.duration || 1);
+  const t = Math.max(0, Math.min(0.999, (e.attackAge || 0) / duration));
+  const effectFrame = Math.min(frameCount - 1, Math.floor(t * frameCount));
+  const anchor = cast.anchors?.[Math.min(cast.anchors.length - 1, frame)] || cast.anchor || [0.6, 0.18];
+  const x = rect.x + rect.width * anchor[0];
+  const y = rect.y + rect.height * anchor[1];
+  const sw = img.width / cols;
+  const sh = img.height / rows;
+  const sx = (effectFrame % cols) * sw;
+  const sy = Math.floor(effectFrame / cols) * sh;
+  const dw = cast.width || def.width || sw;
+  const dh = cast.height || def.height || sh;
+  ctx.save();
+  ctx.globalCompositeOperation = def.composite || 'screen';
+  ctx.globalAlpha = 0.95;
+  ctx.drawImage(img, sx, sy, sw, sh, x - dw / 2, y - dh / 2, dw, dh);
+  ctx.restore();
+}
+
 function drawEnemy(e) {
   const def = enemiesCfg[e.type];
   const isBoss = !!def.isBoss;
@@ -3549,8 +3905,8 @@ function drawEnemy(e) {
     let dy = e.y - dh * (sprite.footY ?? 0.82);
     if (e.type === 'boss_snow_guardian') dy += 12;
 
-    const shadowWidthScale = isBoss ? 0.46 : (e.type === 'brute' ? 0.82 : 0.70);
-    const shadowHeightScale = isBoss ? 0.14 : 0.22;
+    const shadowWidthScale = e.type === 'boss_pharaoh_sphinx' ? 0.62 : (isBoss ? 0.46 : (e.type === 'brute' ? 0.82 : 0.70));
+    const shadowHeightScale = e.type === 'boss_pharaoh_sphinx' ? 0.18 : (isBoss ? 0.14 : 0.22);
     drawEnemyShadow(e.x, e.y, dw * shadowWidthScale, Math.max(12, dh * shadowHeightScale));
 
     ctx.save();
@@ -3561,6 +3917,7 @@ function drawEnemy(e) {
       ctx.filter = 'drop-shadow(0 4px 8px rgba(15, 23, 42, 0.35))';
     }
     const drawFrozenSprite = e.slowTimer > 0;
+    const enemyRect = { x: dx, y: dy, width: dw, height: dh };
     if (!drawFrozenSprite) {
       const spawnPurple = enemySpawnPurpleAmount(e);
       if (spawnPurple > 0) {
@@ -3576,6 +3933,7 @@ function drawEnemy(e) {
       drawFrozenTintedSprite(img, sx, sy, sw, sh, dx, dy, dw, dh, 0.34);
     }
     ctx.restore();
+    drawBossCastEffect(e, enemyRect, frame);
 
     const hpW = Math.max(34, dw * 0.72);
     const hpPct = Math.max(0, e.hp / e.maxHp);
@@ -3817,25 +4175,62 @@ function drawSpriteEffect(p) {
   const cols = def.frameCols || 1;
   const rows = def.frameRows || 1;
   const frameCount = def.frames || cols * rows;
-  const t = Math.min(1, p.age / p.duration);
-  const frameT = p.frameEase === 'easeOut' ? 1 - Math.pow(1 - t, 4.8) : t;
-  const frameIndex = Math.min(frameCount - 1, Math.floor(frameT * frameCount));
+  const playDuration = p.playDuration ?? def.duration ?? p.duration;
+  const fadeOut = p.fadeOut ?? def.fadeOut ?? 0;
+  const frameBaseDuration = Math.max(0.001, playDuration);
+  const animT = Math.min(1, p.age / frameBaseDuration);
+  const frameT = p.holdLastFrame
+    ? animT
+    : (p.frameEase === 'easeOut' ? 1 - Math.pow(1 - animT, 4.8) : animT);
+  const frameIndex = Math.min(frameCount - 1, Math.floor(Math.min(0.999, frameT) * frameCount));
   const sw = img.width / cols;
   const sh = img.height / rows;
   const sx = (frameIndex % cols) * sw;
   const sy = Math.floor(frameIndex / cols) * sh;
-  const scale = (p.effect === 'towerUpgrade' ? 0.92 + t * 0.18 : 1) * (p.scale ?? 1);
+  const t = Math.min(1, p.age / p.duration);
+  const fadeAlpha = fadeOut > 0 && p.age > p.duration - fadeOut
+    ? Math.max(0, (p.duration - p.age) / fadeOut)
+    : 1;
+  const curveScale = spriteEffectScaleCurve(p, animT);
+  const scale = (p.effect === 'towerUpgrade' ? 0.92 + t * 0.18 : 1) * curveScale * (p.scale ?? 1);
   const dw = (p.width || def.width || sw) * scale;
   const dh = (p.height || def.height || sh) * scale;
   ctx.save();
   ctx.globalCompositeOperation = p.composite || def.composite || 'source-over';
-  ctx.globalAlpha = p.alpha ?? 1;
+  ctx.globalAlpha = (p.alpha ?? 1) * fadeAlpha;
   ctx.drawImage(img, sx, sy, sw, sh, drawX - dw / 2, drawY - dh / 2, dw, dh);
+  if (p.judgementGlyph) drawJudgementGlyph(drawX, drawY, dh, (p.alpha ?? 1) * fadeAlpha);
   ctx.restore();
+}
+
+function drawJudgementGlyph(x, y, effectHeight, alpha = 1) {
+  ctx.save();
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '900 29px Microsoft YaHei, sans-serif';
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = '#f6d58a';
+  ctx.fillStyle = '#c94a4a';
+  const gy = y;
+  ctx.strokeText('禁', x, gy);
+  ctx.fillText('禁', x, gy);
+  ctx.restore();
+}
+
+function spriteEffectScaleCurve(p, animT) {
+  if (p.scaleCurve !== 'judgementPulse') return 1;
+  const playT = Math.max(0, Math.min(1, animT));
+  const smooth = value => value * value * (3 - 2 * value);
+  if (playT <= 0.08) return 1 + 0.5 * smooth(playT / 0.08);
+  if (playT <= 0.6) return 1.5;
+  return 1.5 - 0.5 * smooth((playT - 0.6) / 0.4);
 }
 
 function drawProjectiles() {
   for (const p of game.projectiles) {
+    if (p.type === 'spriteEffect' && p.worldLayer) continue;
     if (p.type === 'effectBeam') {
       drawEffectBeam(p);
     } else if (p.type === 'spriteEffect') {
@@ -4603,7 +4998,7 @@ document.addEventListener('dragend', finishHtmlDrag);
 
 function handlePortalDebugKey(event) {
   if (!PORTAL_DEBUG) return;
-  const tune = activeMapId === 'level_02' ? level02PortalDebugTune : portalDebugTune;
+  const tune = portalDebugTune;
   const changed = applyAdjustDebugKey(event, tune, activeMapId === 'level_02' ? 'Level02PortalDebug' : 'Level01PortalDebug');
   if (!changed) return;
 }

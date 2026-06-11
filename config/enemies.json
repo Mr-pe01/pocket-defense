@@ -49,8 +49,8 @@
     "boss_forest_guardian": {
       "name": "森林守卫 Boss",
       "color": "#ef4444",
-      "hp": 1296,
-      "speed": 41,
+      "hp": 1200,
+      "speed": 32,
       "reward": 36,
       "baseDamage": 10,
       "isBoss": true,
@@ -60,15 +60,41 @@
     "boss_snow_guardian": {
       "name": "冰晶雪人 Boss",
       "color": "#bae6fd",
-      "hp": 1331,
-      "speed": 38,
+      "hp": 1200,
+      "speed": 32,
       "reward": 46,
       "baseDamage": 12,
       "isBoss": true,
       "radius": 30,
       "sprite": { "image": "./assets/enemies/boss_snow_guardian_walk_4x4.webp", "frameCols": 4, "frameRows": 4, "frames": 16, "fps": 8, "width": 212, "height": 212, "footY": 0.84 },
       "attackSprite": { "image": "./assets/enemies/boss_snow_guardian_attack.webp", "frameCols": 4, "frameRows": 4, "frames": 16, "fps": 12, "width": 230, "height": 230, "footY": 0.84 },
-      "towerAttack": { "name": "雪崩", "cooldown": 9, "initialDelay": 10, "duration": 1.1, "shakeDuration": 0.55, "shakeIntensity": 9, "towerHitEffect": "snowBossTowerHit", "towerHitEffectLead": 0.35 }
+      "towerAttack": { "name": "雪崩", "cooldown": 7, "initialDelay": 7, "range": 200, "duration": 1.1, "shakeDuration": 0.55, "shakeIntensity": 9, "towerHitEffect": "snowBossTowerHit", "towerHitEffectLead": 0.35 }
+    },
+    "boss_pharaoh_sphinx": {
+      "name": "法老狮身守卫 Boss",
+      "color": "#fbbf24",
+      "hp": 750,
+      "speed": 34,
+      "reward": 58,
+      "baseDamage": 12,
+      "isBoss": true,
+      "radius": 30,
+      "sprite": { "image": "./assets/enemies/boss_pharaoh_sphinx_run_4x4.webp", "frameCols": 4, "frameRows": 4, "frames": 16, "fps": 11, "width": 195, "height": 138, "footY": 0.74 },
+      "attackSprite": { "image": "./assets/enemies/boss_pharaoh_sphinx_skill_4x4.webp", "frameCols": 4, "frameRows": 4, "frames": 16, "fps": 8, "width": 195, "height": 138, "footY": 0.74 },
+      "towerAttack": { "name": "毁灭", "cooldown": 8, "initialDelay": 8, "duration": 2.0, "shakeDuration": 0.35, "shakeIntensity": 5, "towerHitEffect": "bossPharaohBottomHit", "towerHitEffectLead": 1.25, "destroyRandomTower": true }
+    },
+    "boss_pharaoh_sphinx_top": {
+      "name": "法老狮身守卫 Boss",
+      "color": "#fbbf24",
+      "hp": 1275,
+      "speed": 34,
+      "reward": 58,
+      "baseDamage": 12,
+      "isBoss": true,
+      "radius": 30,
+      "sprite": { "image": "./assets/enemies/boss_pharaoh_sphinx_top_run_4x4.png", "frameCols": 4, "frameRows": 4, "frames": 16, "fps": 11, "width": 146, "height": 146, "footY": 0.88 },
+      "attackSprite": { "image": "./assets/enemies/boss_pharaoh_sphinx_top_skill_4x4.png", "frameCols": 4, "frameRows": 4, "frames": 16, "fps": 8, "width": 146, "height": 146, "footY": 0.88 },
+      "towerAttack": { "name": "审判", "cooldown": 5, "initialDelay": 5, "duration": 2.0, "shakeDuration": 0, "shakeIntensity": 0, "towerHitEffect": "bossPharaohJudgementHit", "towerHitEffectLead": 1.25, "disableRandomTower": true, "disableDuration": 3, "priorityRange": 150 }
     }
   }
 }

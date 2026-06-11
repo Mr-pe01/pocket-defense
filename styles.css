@@ -369,7 +369,7 @@ canvas {
 }
 
 .shop-panel::before {
-  background-image: url("./assets/ui/panels/shop_bar_background.png");
+  background-image: none;
 }
 
 .inventory-panel {
@@ -377,7 +377,7 @@ canvas {
 }
 
 .inventory-panel::before {
-  background-image: url("./assets/ui/panels/shop_bar_background.png");
+  background-image: none;
 }
 
 .section-title {
@@ -408,7 +408,7 @@ canvas {
   padding: 0 9px 0 55px;
   border-radius: 0;
   color: #fff7ed;
-  background: url("./assets/ui/panels/gold_hud_panel.png") left -25px center / contain no-repeat;
+  background: transparent;
   border: 0;
   font-size: 13px;
   font-weight: 900;
@@ -1266,7 +1266,7 @@ body.is-mobile-game-fullscreen .fullscreen-button {
   top: -24px;
   z-index: -1;
   display: block;
-  background: url("./assets/ui/panels/shop_bar_background.png") center / 100% 100% no-repeat;
+  background: transparent;
   pointer-events: none;
   filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.32));
 }
@@ -1342,7 +1342,7 @@ body.is-mobile-game-fullscreen .fullscreen-button {
   height: 137px;
   padding: 12px 29px 12px 52px;
   color: #fff7ed;
-  background: url("./assets/ui/panels/gold_hud_panel.png?v=20260529-gold-hud-panel") center / contain no-repeat;
+  background: transparent;
   font: 900 22px/1 "Microsoft YaHei", sans-serif;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
   filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.38));

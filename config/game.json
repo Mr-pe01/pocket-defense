@@ -6,7 +6,7 @@
   },
   "game": {
     "baseHp": 20,
-    "startGold": 68,
+    "startGold": 100,
     "maxWave": 8,
     "prepReward": 10,
     "killGold": 0,
