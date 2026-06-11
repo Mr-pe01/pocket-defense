@@ -447,6 +447,7 @@ const SPRITE_SHEET_EFFECTS = {
   thunderSplash: { image: './assets/effects/hit/thunder_splash_sheet.png', frameCols: 3, frameRows: 3, frames: 9, duration: 0.36, width: 236, height: 142, composite: 'screen' },
   bossPharaohBottomHit: { image: './assets/effects/hit/boss_pharaoh_sphinx_bottom_hit_4x4.png', frameCols: 4, frameRows: 4, frames: 16, duration: 1.2, width: 150, height: 150, composite: 'source-over', alphaCutoff: 18 },
   bossPharaohJudgementHit: { image: './assets/effects/hit/boss_pharaoh_top_judgement_hit_4x4.png', frameCols: 4, frameRows: 4, frames: 16, duration: 1.0, fadeOut: 0.4, width: 150, height: 150, composite: 'source-over', scaleCurve: 'judgementPulse', alphaCutoff: 18 },
+  bossPharaohJudgementGlyph: { image: './assets/effects/hit/boss_pharaoh_judgement_glyph.png', frameCols: 1, frameRows: 1, frames: 1, duration: 1.0, width: 54, height: 54, composite: 'source-over', alphaCutoff: 8 },
   bossPharaohTopStaffCast: { image: './assets/effects/hit/boss_pharaoh_top_staff_cast_4x4.png', frameCols: 4, frameRows: 4, frames: 16, duration: 2.0, width: 184, height: 184, composite: 'screen', alphaCutoff: 18 },
   snowBossTowerHit: { image: './assets/effects/hit/snow_boss_tower_hit_sheet.png', frameCols: 4, frameRows: 4, frames: 16, duration: 0.72, width: 203, height: 203, composite: 'screen' },
   towerUpgrade: { image: './assets/effects/upgrade/tower_upgrade_sheet.png', frameCols: 4, frameRows: 2, frames: 8, duration: 0.82, width: 95, height: 158, composite: 'screen' },
@@ -4204,18 +4205,14 @@ function drawSpriteEffect(p) {
 }
 
 function drawJudgementGlyph(x, y, effectHeight, alpha = 1) {
+  const glyphDef = SPRITE_SHEET_EFFECTS.bossPharaohJudgementGlyph;
+  const glyphImg = spriteSheetImages.bossPharaohJudgementGlyph;
+  if (!glyphDef || !glyphImg) return;
+  const size = Math.max(24, Math.min(64, effectHeight * 0.36));
   ctx.save();
-  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalCompositeOperation = glyphDef.composite || 'source-over';
   ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = '900 29px Microsoft YaHei, sans-serif';
-  ctx.lineWidth = 5;
-  ctx.strokeStyle = '#f6d58a';
-  ctx.fillStyle = '#c94a4a';
-  const gy = y;
-  ctx.strokeText('禁', x, gy);
-  ctx.fillText('禁', x, gy);
+  ctx.drawImage(glyphImg, 0, 0, glyphImg.width, glyphImg.height, x - size / 2, y - size / 2, size, size);
   ctx.restore();
 }
 
