@@ -4200,19 +4200,25 @@ function drawSpriteEffect(p) {
   ctx.globalCompositeOperation = p.composite || def.composite || 'source-over';
   ctx.globalAlpha = (p.alpha ?? 1) * fadeAlpha;
   ctx.drawImage(img, sx, sy, sw, sh, drawX - dw / 2, drawY - dh / 2, dw, dh);
-  if (p.judgementGlyph) drawJudgementGlyph(drawX, drawY, dh, (p.alpha ?? 1) * fadeAlpha);
+  if (p.judgementGlyph) drawJudgementGlyph(drawX, drawY, dh, (p.alpha ?? 1) * fadeAlpha, p.age);
   ctx.restore();
 }
 
-function drawJudgementGlyph(x, y, effectHeight, alpha = 1) {
+function drawJudgementGlyph(x, y, effectHeight, alpha = 1, age = 0) {
+  const delay = 0.5;
+  if (age < delay) return;
   const glyphDef = SPRITE_SHEET_EFFECTS.bossPharaohJudgementGlyph;
   const glyphImg = spriteSheetImages.bossPharaohJudgementGlyph;
   if (!glyphDef || !glyphImg) return;
-  const size = Math.max(24, Math.min(64, effectHeight * 0.36));
+  const size = Math.max(47, Math.min(125, effectHeight * 0.705));
+  const appearT = Math.max(0, Math.min(1, (age - delay) / 0.15));
+  const smooth = appearT * appearT * (3 - 2 * appearT);
+  const drawSize = size * (2 - smooth);
+  const drawY = y - effectHeight * 0.25;
   ctx.save();
   ctx.globalCompositeOperation = glyphDef.composite || 'source-over';
   ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
-  ctx.drawImage(glyphImg, 0, 0, glyphImg.width, glyphImg.height, x - size / 2, y - size / 2, size, size);
+  ctx.drawImage(glyphImg, 0, 0, glyphImg.width, glyphImg.height, x - drawSize / 2, drawY - drawSize / 2, drawSize, drawSize);
   ctx.restore();
 }
 
